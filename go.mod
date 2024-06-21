@@ -2,7 +2,12 @@ module canoe
 
 go 1.22.0
 
-require github.com/kataras/iris/v12 v12.2.11
+require (
+	github.com/joho/godotenv v1.5.1
+	github.com/kataras/golog v0.1.11
+	github.com/kataras/iris/v12 v12.2.11
+	github.com/kelseyhightower/envconfig v1.4.0
+)
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
@@ -25,7 +30,6 @@ require (
 	github.com/iris-contrib/schema v0.0.6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kataras/blocks v0.0.8 // indirect
-	github.com/kataras/golog v0.1.11 // indirect
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede // indirect
 	github.com/kataras/pio v0.0.13 // indirect
 	github.com/kataras/sitemap v0.0.6 // indirect

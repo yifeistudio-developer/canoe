@@ -1,54 +1,20 @@
 package main
 
 import (
+	"canoe/internal/config"
+	"canoe/internal/route"
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/websocket"
 )
 
 func main() {
 	app := iris.New()
-	booksAPI := app.Party("/books")
-	{
-		booksAPI.Use(iris.Compression)
-		booksAPI.Get("/", list)
-		booksAPI.Post("/", create)
-	}
-	ws := websocket.New(websocket.DefaultGorillaUpgrader, websocket.Events{})
-	app.Party("/channel", websocket.Handler(ws))
-	app.Listen(":8080")
-}
-
-// Book example.
-type Book struct {
-	Title string `json:"title"`
-}
-
-func list(ctx iris.Context) {
-	books := []Book{
-		{"Mastering Concurrency in Go"},
-		{"Go Design Patterns"},
-		{"Black Hat Go"},
-	}
-
-	ctx.JSON(books)
-	// TIP: negotiate the response between server's prioritizes
-	// and client's requirements, instead of ctx.JSON:
-	// ctx.Negotiation().JSON().MsgPack().Protobuf()
-	// ctx.Negotiate(books)
-}
-
-func create(ctx iris.Context) {
-	var b Book
-	err := ctx.ReadJSON(&b)
-	// TIP: use ctx.ReadBody(&b) to bind
-	// any type of incoming data instead.
+	cfg := config.LoadConfig()
+	app.Logger().Install(config.GetLogger(cfg.Logger))
+	app.Use(config.AccessLogger)
+	route.SetupRoutes(app)
+	err := app.Listen(cfg.Server.Address)
 	if err != nil {
-		ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
-			Title("Book creation failure").DetailErr(err))
-		// TIP: use ctx.StopWithError(code, err) when only
-		// plain text responses are expected on errors.
-		return
+		app.Logger().Error("failed to start server: ", err.Error())
+		panic("failed to start server: " + err.Error())
 	}
-	println("Received Book: " + b.Title)
-	ctx.StatusCode(iris.StatusCreated)
 }
