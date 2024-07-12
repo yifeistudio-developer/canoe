@@ -10,8 +10,8 @@ func main() {
 	app := iris.New()
 	cfg := config.LoadConfig()
 	app.Logger().Install(config.GetLogger(cfg.Logger))
-	app.UseError(config.GlobalErrorHandler)
 	app.UseGlobal(config.AccessLogger)
+	app.UseError(config.GlobalErrorHandler)
 	route.SetupRoutes(app)
 	err := app.Listen(cfg.Server.Address)
 	if err != nil {
