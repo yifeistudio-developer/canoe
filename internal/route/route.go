@@ -10,5 +10,5 @@ func SetupRoutes(app *iris.Application) {
 	app.Get("/", func(ctx iris.Context) {
 		ctx.JSON(Success(nil))
 	})
-	app.Party("/channel", handler.HandleChannel())
+	app.Get("/channel/{accessToken:string}", handler.HandleChannel())
 }

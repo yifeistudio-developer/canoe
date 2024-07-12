@@ -51,3 +51,7 @@ func AccessLogger(ctx iris.Context) {
 	duration := time.Since(start)
 	ctx.Application().Logger().Printf("%s %s took %v", ctx.Method(), ctx.Path(), duration.Milliseconds())
 }
+
+func GlobalErrorHandler(ctx iris.Context) {
+	println("hanlde error")
+}
