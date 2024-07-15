@@ -30,16 +30,17 @@ func HandleChannel() context.Handler {
 		uri := request.RequestURI
 		accessToken := uri[strings.LastIndex(uri, "/"):]
 		if accessToken == "" {
-			println("access-token is empty")
 			c.Close()
 			return errors.New("access-token is empty")
 		}
-		println("connected. ", request.RemoteAddr)
+		if strings.HasSuffix(accessToken, "/") {
+			accessToken = accessToken[1:]
+		}
 		return nil
 	}
 	// 连接断开
 	ws.OnDisconnect = func(c *neffos.Conn) {
-		println("disconnected")
+
 	}
 	return websocket.Handler(ws)
 }

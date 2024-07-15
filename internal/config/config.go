@@ -1,6 +1,7 @@
 package config
 
 import (
+	. "canoe/internal/model"
 	"github.com/joho/godotenv"
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
@@ -53,5 +54,7 @@ func AccessLogger(ctx iris.Context) {
 }
 
 func GlobalErrorHandler(ctx iris.Context) {
-	println("hanlde error")
+	code := ctx.GetStatusCode()
+	result := Fail(code, "")
+	_ = ctx.JSON(result)
 }
