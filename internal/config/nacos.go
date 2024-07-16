@@ -29,7 +29,9 @@ func Register(cfg *Config, logger *golog.Logger) {
 		Weight:      1,
 		Enable:      true,
 		Healthy:     true,
-		Metadata:    map[string]string{},
+		Metadata: map[string]string{
+			"gRPC_port": "",
+		},
 	})
 	if err != nil {
 		logger.Fatal("register server failed.", err)

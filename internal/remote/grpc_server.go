@@ -1,7 +1,7 @@
 package remote
 
 import (
-	"canoe/internal/grpc/generated"
+	"canoe/internal/remote/generated"
 	"context"
 )
 

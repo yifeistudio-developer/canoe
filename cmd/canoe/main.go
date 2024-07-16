@@ -2,12 +2,12 @@ package main
 
 import (
 	"canoe/internal/config"
-	remote "canoe/internal/grpc"
-	"canoe/internal/grpc/generated"
+	"canoe/internal/remote"
+	"canoe/internal/remote/generated"
 	"canoe/internal/route"
+	"context"
 	"github.com/kataras/iris/v12"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -35,19 +35,21 @@ func main() {
 			panic("failed to start server: " + err.Error())
 		}
 	}()
-
+	gRpcServer := grpc.NewServer()
 	go func() {
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
+			logger.Fatalf("failed to listen: %v", err)
 		}
-		s := grpc.NewServer()
-		generated.RegisterGreeterServer(s, &remote.Server{})
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+		generated.RegisterGreeterServer(gRpcServer, &remote.Server{})
+		for k, v := range gRpcServer.GetServiceInfo() {
+			logger.Info("service info: ", k, v)
+		}
+
+		if err := gRpcServer.Serve(lis); err != nil {
+			logger.Fatalf("failed to serve: %v", err)
 		}
 	}()
-
 	wg.Wait()
 	// do register
 	config.Register(cfg, logger)
@@ -55,8 +57,14 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	// do de-register
-	logger.Println("Server is shutting down...")
+	logger.Info("Server is shutting down...")
 	config.DeRegister(cfg, logger)
-	logger.Println("Server exited")
+	gRpcServer.GracefulStop()
+	logger.Info("Grpc Server gracefully stopped")
+	err := app.Shutdown(context.Background())
+	if err == nil {
+		logger.Info("Iris Server gracefully stopped")
+	}
+	logger.Info("Server exited")
 	os.Exit(0)
 }
