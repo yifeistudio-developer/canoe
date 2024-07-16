@@ -2,19 +2,18 @@ package main
 
 import (
 	"canoe/internal/config"
+	remote "canoe/internal/grpc"
+	"canoe/internal/grpc/generated"
 	"canoe/internal/route"
 	"github.com/kataras/iris/v12"
+	"google.golang.org/grpc"
+	"log"
+	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
-)
-
-const (
-	WebServerStarted = iota
-	GrpcServerStarted
 )
 
 func main() {
@@ -26,9 +25,8 @@ func main() {
 	route.SetupRoutes(app)
 	var wg sync.WaitGroup
 	logger := app.Logger()
-
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		err := app.Listen(":"+strconv.Itoa(int(cfg.Server.Port)), func(application *iris.Application) {
 			wg.Done()
 		})
@@ -39,10 +37,15 @@ func main() {
 	}()
 
 	go func() {
-		wg.Add(1)
-		time.Sleep(3000 * time.Millisecond)
-		logger.Printf("starting grpc server at port %d", cfg.Server.Port)
-		wg.Done()
+		lis, err := net.Listen("tcp", ":50051")
+		if err != nil {
+			log.Fatalf("failed to listen: %v", err)
+		}
+		s := grpc.NewServer()
+		generated.RegisterGreeterServer(s, &remote.Server{})
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
 	}()
 
 	wg.Wait()

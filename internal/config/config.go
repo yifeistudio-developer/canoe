@@ -67,14 +67,13 @@ func LoadConfig() *Config {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %s", err)
 	}
-	config, err := client.GetConfig(vo.ConfigParam{
+	_, err = client.GetConfig(vo.ConfigParam{
 		Group:  "DEFAULT",
 		DataId: "canoe",
 		OnChange: func(namespace, group, dataId, data string) {
 
 		},
 	})
-	log.Printf(config)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %s", err)
 	}

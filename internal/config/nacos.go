@@ -1,6 +1,7 @@
 package config
 
 import (
+	"canoe/internal/util"
 	"github.com/kataras/golog"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -17,12 +18,13 @@ func Register(cfg *Config, logger *golog.Logger) {
 		ClientConfig:  &cc,
 		ServerConfigs: sc,
 	})
+	address, err := util.GetLocalIpAddress()
 	if err != nil {
 		logger.Fatal("register server failed.", err)
 	}
 	_, err = client.RegisterInstance(vo.RegisterInstanceParam{
 		ServiceName: cfg.ApplicationName,
-		Ip:          "192.168.80.1",
+		Ip:          address,
 		Port:        server.Port,
 		Weight:      1,
 		Enable:      true,
@@ -37,9 +39,10 @@ func Register(cfg *Config, logger *golog.Logger) {
 
 func DeRegister(cfg *Config, logger *golog.Logger) {
 	server := cfg.Server
+	address, _ := util.GetLocalIpAddress()
 	instance, err := client.DeregisterInstance(vo.DeregisterInstanceParam{
 		ServiceName: cfg.ApplicationName,
-		Ip:          "192.168.80.1",
+		Ip:          address,
 		Port:        server.Port,
 	})
 	if err != nil {
