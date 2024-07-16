@@ -6,14 +6,25 @@ import (
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"log"
 	"os"
 	"time"
 )
 
+var sc []constant.ServerConfig
+var cc constant.ClientConfig
+
 type Config struct {
-	Server struct {
-		Address string `envconfig:"SERVER_ADDRESS" default:":8080"`
+	ApplicationName string `envconfig:"APPLICATION_NAME" default:"canoe"`
+	Server          struct {
+		Port uint64 `envconfig:"SERVER_PORT" default:"8080"`
+	}
+	Nacos struct {
+		Host string `envconfig:"NACOS_HOST" default:"x.yifeistudio.com"`
+		Port uint64 `envconfig:"NACOS_PORT" default:"8848"`
 	}
 	Logger struct {
 		Level string `envconfig:"LOG_LEVEL" default:"info"`
@@ -32,6 +43,39 @@ func LoadConfig() *Config {
 		log.Printf("No %s file found", envFile)
 	}
 	if err := envconfig.Process("", &cfg); err != nil {
+		log.Fatalf("Failed to load configuration: %s", err)
+	}
+	nacos := cfg.Nacos
+	sc = []constant.ServerConfig{
+		*constant.NewServerConfig(nacos.Host, nacos.Port),
+	}
+	cc = *constant.NewClientConfig(
+		constant.WithNamespaceId(""),
+		constant.WithTimeoutMs(5000),
+		constant.WithNotLoadCacheAtStart(true),
+		constant.WithLogDir("/tmp/nacos/log"),
+		constant.WithCacheDir("/tmp/nacos/cache"),
+		constant.WithLogLevel("debug"),
+	)
+
+	client, err := clients.NewConfigClient(
+		vo.NacosClientParam{
+			ClientConfig:  &cc,
+			ServerConfigs: sc,
+		},
+	)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %s", err)
+	}
+	config, err := client.GetConfig(vo.ConfigParam{
+		Group:  "DEFAULT",
+		DataId: "canoe",
+		OnChange: func(namespace, group, dataId, data string) {
+
+		},
+	})
+	log.Printf(config)
+	if err != nil {
 		log.Fatalf("Failed to load configuration: %s", err)
 	}
 	return &cfg
