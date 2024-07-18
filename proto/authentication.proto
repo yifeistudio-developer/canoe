@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = ".;generated";
+
+
+// 认证服务.
+service AuthenticationService {
+
+  /**
+   * 获取账号概览信息
+   */
+  rpc GetAccountPrincipals(TicketRequest) returns (PrincipalsReply) {}
+
+}
+
+// 凭证
+message TicketRequest {
+  string ticket = 1;
+}
+
+// 账户概要信息
+message PrincipalsReply  {
+
+  int32 code = 1;
+
+  string msg = 2;
+
+  Principals principals = 3;
+
+  message Principals {
+
+    // 账号
+    string username = 1;
+
+    // 昵称
+    string nickname = 2;
+
+    // 头像
+    string avatar = 3;
+  }
+}

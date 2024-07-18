@@ -35,13 +35,14 @@ func main() {
 			panic("failed to start server: " + err.Error())
 		}
 	}()
-	gRpcServer := grpc.NewServer()
+	interceptor := remote.ServerInterceptor{Logger: logger}
+	gRpcServer := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor))
 	go func() {
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
 			logger.Fatalf("failed to listen: %v", err)
 		}
-		generated.RegisterGreeterServer(gRpcServer, &remote.Server{})
+		generated.RegisterAuthenticationServiceServer(gRpcServer, &remote.Server{})
 		for k, v := range gRpcServer.GetServiceInfo() {
 			logger.Info("service info: ", k, v)
 		}
