@@ -6,7 +6,6 @@ import (
 	"github.com/kataras/golog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	"log"
 )
 
 type Server struct {
@@ -26,7 +25,7 @@ func (si *ServerInterceptor) UnaryServerInterceptor(
 	logger := si.Logger
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
-		log.Printf("Request to %s with metadata: %v", info.FullMethod, md)
+		logger.Printf("Request to %s with metadata: %v", info.FullMethod, md)
 	}
 	resp, err = handler(ctx, req)
 	if err != nil {
