@@ -30,7 +30,7 @@ func Register(cfg *Config, logger *golog.Logger) {
 		Enable:      true,
 		Healthy:     true,
 		Metadata: map[string]string{
-			"gRPC_port": "",
+			"gRPC_port": "50051",
 		},
 	})
 	if err != nil {

@@ -7,8 +7,9 @@ import (
 )
 
 func SetupRoutes(app *iris.Application) {
-	app.Get("/", func(ctx iris.Context) {
+	party := app.Party("/canoe")
+	party.Get("/", func(ctx iris.Context) {
 		_ = ctx.JSON(Success(nil))
 	})
-	app.Get("/channel/{accessToken:string}", handler.HandleChannel())
+	party.Get("/channel/{accessToken:string}", handler.HandleChannel())
 }
