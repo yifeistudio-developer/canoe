@@ -11,7 +11,7 @@ import (
 
 var client naming_client.INamingClient
 
-func Register(cfg *Config, logger *golog.Logger) {
+func Register(cfg *Config, log *golog.Logger) {
 	server := cfg.Server
 	var err error
 	client, err = clients.NewNamingClient(vo.NacosClientParam{
@@ -20,7 +20,7 @@ func Register(cfg *Config, logger *golog.Logger) {
 	})
 	address, err := util.GetLocalIpAddress()
 	if err != nil {
-		logger.Fatal("register server failed.", err)
+		log.Fatal("register server failed.", err)
 	}
 	_, err = client.RegisterInstance(vo.RegisterInstanceParam{
 		ServiceName: cfg.ApplicationName,
@@ -34,12 +34,12 @@ func Register(cfg *Config, logger *golog.Logger) {
 		},
 	})
 	if err != nil {
-		logger.Fatal("register server failed.", err)
+		log.Fatal("register server failed.", err)
 	}
-	logger.Info("register server successfully.")
+	log.Info("register server successfully.")
 }
 
-func DeRegister(cfg *Config, logger *golog.Logger) {
+func DeRegister(cfg *Config, log *golog.Logger) {
 	server := cfg.Server
 	address, _ := util.GetLocalIpAddress()
 	instance, err := client.DeregisterInstance(vo.DeregisterInstanceParam{
@@ -48,9 +48,9 @@ func DeRegister(cfg *Config, logger *golog.Logger) {
 		Port:        server.Port,
 	})
 	if err != nil {
-		logger.Fatal("deregister server failed.", err)
+		log.Fatal("deregister server failed.", err)
 	}
-	logger.Info("deregister server successfully. %v", instance)
+	log.Info("deregister server successfully. %v", instance)
 }
 
 func GetService(serviceName string) (model.Service, error) {

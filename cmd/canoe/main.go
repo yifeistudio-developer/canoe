@@ -2,70 +2,66 @@ package main
 
 import (
 	"canoe/internal/config"
-	"canoe/internal/remote"
-	"canoe/internal/remote/generated"
-	"canoe/internal/route"
-	"context"
+	"canoe/internal/database"
+	"database/sql"
 	"github.com/kataras/iris/v12"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"net"
 	"os"
 	"os/signal"
-	"strconv"
-	"sync"
 	"syscall"
 )
 
 func main() {
-	app := iris.New()
-	cfg := config.LoadConfig()
-	app.Logger().Install(config.GetLogger(cfg.Logger))
-	app.UseGlobal(config.AccessLogger)
-	app.UseError(config.GlobalErrorHandler)
-	route.SetupRoutes(app)
-	var wg sync.WaitGroup
-	logger := app.Logger()
-	wg.Add(1)
-	go func() {
-		err := app.Listen(":"+strconv.Itoa(int(cfg.Server.Port)), func(application *iris.Application) {
-			wg.Done()
-		})
-		if err != nil {
-			logger.Error("failed to start server: ", err.Error())
-			panic("failed to start server: " + err.Error())
-		}
-	}()
-	interceptor := remote.ServerInterceptor{Logger: logger}
-	gRpcServer := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor))
-	go func() {
-		lis, err := net.Listen("tcp", ":50051")
-		if err != nil {
-			logger.Fatalf("failed to listen: %v", err)
-		}
-		generated.RegisterAuthenticationServiceServer(gRpcServer, &remote.Server{})
-		for k, v := range gRpcServer.GetServiceInfo() {
-			logger.Info("service info: ", k, v)
-		}
-
-		if err := gRpcServer.Serve(lis); err != nil {
-			logger.Fatalf("failed to serve: %v", err)
-		}
-	}()
-	wg.Wait()
-	// do register
-	config.Register(cfg, logger)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	running := runningContext{}
+	running.startup()
 	<-quit
-	// do de-register
-	logger.Info("Server is shutting down...")
-	config.DeRegister(cfg, logger)
-	gRpcServer.GracefulStop()
-	logger.Info("Grpc Server gracefully stopped")
-	err := app.Shutdown(context.Background())
-	if err == nil {
-		logger.Info("Iris Server gracefully stopped")
+	running.shutdown()
+}
+
+type runningContext struct {
+	cfg  *config.Config
+	app  *iris.Application
+	grpc *grpc.Server
+	db   *sql.DB
+}
+
+// 启动
+func (c *runningContext) startup() {
+	cfg := config.LoadConfig()
+	app, isStarted := startIris(cfg)
+	if !isStarted {
+		panic("Canoe Web-Server is not started")
 	}
-	logger.Info("Server exited")
+	log := app.Logger()
+	log.Info("Iris Server started")
+	gRpcServer := startGrpcServer(log)
+	log.Info("Grpc Server started")
+	// do register
+	config.Register(cfg, log)
+	c.cfg = cfg
+	c.app = app
+	c.grpc = gRpcServer
+	c.db = database.Connect(cfg.Database)
+	log.Info("Database connected")
+}
+
+// 关闭
+func (c *runningContext) shutdown() {
+	log := c.app.Logger()
+	// do de-register
+	log.Info("Server is shutting down...")
+	config.DeRegister(c.cfg, log)
+	c.grpc.GracefulStop()
+	log.Info("Grpc Server gracefully stopped")
+	err := c.app.Shutdown(context.Background())
+	if err == nil {
+		log.Info("Iris Server gracefully stopped")
+	}
+	database.Disconnect(c.db)
+	log.Info("database disconnected")
+	log.Info("Server exited")
 	os.Exit(0)
 }
