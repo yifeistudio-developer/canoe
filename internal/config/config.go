@@ -23,8 +23,10 @@ type Config struct {
 		Port uint64 `envconfig:"SERVER_PORT" default:"8080"`
 	}
 	Nacos struct {
-		Host string `envconfig:"NACOS_HOST" default:"localhost"`
-		Port uint64 `envconfig:"NACOS_PORT" default:"8848"`
+		Host     string `envconfig:"NACOS_HOST" default:"localhost"`
+		Port     uint64 `envconfig:"NACOS_PORT" default:"8848"`
+		Username string `envconfig:"NACOS_USERNAME" default:"nacos"`
+		Password string `envconfig:"NACOS_PASSWORD" default:"nacos"`
 	}
 	Logger struct {
 		Level string `envconfig:"LOG_LEVEL" default:"info"`
@@ -63,6 +65,8 @@ func LoadConfig() *Config {
 		constant.WithLogDir("/tmp/nacos/log"),
 		constant.WithCacheDir("/tmp/nacos/cache"),
 		constant.WithLogLevel("debug"),
+		constant.WithUsername(nacos.Username),
+		constant.WithPassword(nacos.Password),
 	)
 
 	client, err := clients.NewConfigClient(
