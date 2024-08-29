@@ -10,7 +10,7 @@ require (
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.1.1
-	golang.org/x/net v0.24.0
+	golang.org/x/net v0.27.0
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.34.2
 	gorm.io/driver/postgres v1.5.9
@@ -65,6 +65,22 @@ require (
 	github.com/nats-io/nats.go v1.34.1 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/pion/datachannel v1.5.9 // indirect
+	github.com/pion/dtls/v3 v3.0.1 // indirect
+	github.com/pion/ice/v4 v4.0.1 // indirect
+	github.com/pion/interceptor v0.1.30 // indirect
+	github.com/pion/logging v0.2.2 // indirect
+	github.com/pion/mdns/v2 v2.0.7 // indirect
+	github.com/pion/randutil v0.1.0 // indirect
+	github.com/pion/rtcp v1.2.14 // indirect
+	github.com/pion/rtp v1.8.9 // indirect
+	github.com/pion/sctp v1.8.33 // indirect
+	github.com/pion/sdp/v3 v3.0.9 // indirect
+	github.com/pion/srtp/v3 v3.0.3 // indirect
+	github.com/pion/stun/v3 v3.0.0 // indirect
+	github.com/pion/transport/v3 v3.0.7 // indirect
+	github.com/pion/turn/v4 v4.0.0 // indirect
+	github.com/pion/webrtc/v4 v4.0.0-beta.29 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -79,6 +95,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	github.com/wlynxg/anet v0.0.3 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
@@ -86,7 +103,7 @@ require (
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect

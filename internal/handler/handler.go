@@ -14,7 +14,6 @@ import (
 )
 
 func HandleChannel() context.Handler {
-
 	upgrader := gorilla.Upgrader(grl.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
