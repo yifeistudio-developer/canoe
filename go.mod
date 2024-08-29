@@ -10,6 +10,7 @@ require (
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.1.1
+	github.com/pion/webrtc/v4 v4.0.0-beta.29
 	golang.org/x/net v0.27.0
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.34.2
@@ -80,7 +81,6 @@ require (
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pion/turn/v4 v4.0.0 // indirect
-	github.com/pion/webrtc/v4 v4.0.0-beta.29 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
