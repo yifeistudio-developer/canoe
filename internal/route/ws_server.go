@@ -1,4 +1,4 @@
-package handler
+package route
 
 import (
 	. "canoe/internal/model"
@@ -12,11 +12,13 @@ import (
 	"net/http"
 )
 
-func NewLiveServer(accessToken string) *neffos.Server {
+func wsServer(accessToken string) *neffos.Server {
 	upgrader := gorilla.Upgrader(grl.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
+
 	ws := websocket.New(upgrader, websocket.Events{
+		// 普通消息
 		websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
 			var msg Message
 			if err := json.Unmarshal(message.Body, &msg); err != nil {
@@ -30,19 +32,19 @@ func NewLiveServer(accessToken string) *neffos.Server {
 			conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, []byte(str)))
 			return nil
 		},
+		// webrtc 消息
 		"ice-candidate": func(conn *neffos.NSConn, msg neffos.Message) error {
 			var candidate webrtc.ICECandidateInit
 			if err := json.Unmarshal(msg.Body, &candidate); err != nil {
 				return err
 			}
-
 			peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 			if err != nil {
 				return err
 			}
-
 			return peerConnection.AddICECandidate(candidate)
 		},
+		// webrtc 消息
 		"sdp": func(conn *neffos.NSConn, msg neffos.Message) error {
 			var offer webrtc.SessionDescription
 			if err := json.Unmarshal(msg.Body, &offer); err != nil {
