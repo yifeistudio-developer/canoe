@@ -7,8 +7,6 @@ import (
 	"github.com/kataras/iris/v12/websocket"
 	"github.com/kataras/neffos"
 	"github.com/kataras/neffos/gorilla"
-	"github.com/pion/webrtc/v4"
-	"log"
 	"net/http"
 )
 
@@ -28,50 +26,6 @@ func NewChatServer(accessToken string) *neffos.Server {
 			payload := msg.Payload
 			str := payload.(string)
 			conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, []byte(str)))
-			return nil
-		},
-		"ice-candidate": func(conn *neffos.NSConn, msg neffos.Message) error {
-			var candidate webrtc.ICECandidateInit
-			if err := json.Unmarshal(msg.Body, &candidate); err != nil {
-				return err
-			}
-
-			peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-			if err != nil {
-				return err
-			}
-
-			return peerConnection.AddICECandidate(candidate)
-		},
-		"sdp": func(conn *neffos.NSConn, msg neffos.Message) error {
-			var offer webrtc.SessionDescription
-			if err := json.Unmarshal(msg.Body, &offer); err != nil {
-				return err
-			}
-			peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-			if err != nil {
-				return err
-			}
-			// 设置远程描述
-			if err := peerConnection.SetRemoteDescription(offer); err != nil {
-				return err
-			}
-			// 创建应答
-			answer, err := peerConnection.CreateAnswer(nil)
-			if err != nil {
-				return err
-			}
-			// 设置本地描述
-			if err := peerConnection.SetLocalDescription(answer); err != nil {
-				return err
-			}
-			// 发送应答
-			answerJSON, err := json.Marshal(peerConnection.LocalDescription())
-			if err != nil {
-				log.Println("Failed to marshal answer:", err)
-				return nil
-			}
-			conn.Emit("sdp", answerJSON)
 			return nil
 		},
 	})

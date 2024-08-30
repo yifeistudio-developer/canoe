@@ -1,59 +1,88 @@
 package handler
 
 import (
-	"github.com/gorilla/websocket"
+	. "canoe/internal/model"
+	"encoding/json"
+	grl "github.com/gorilla/websocket"
+	"github.com/kataras/iris/v12/websocket"
+	"github.com/kataras/neffos"
+	"github.com/kataras/neffos/gorilla"
 	"github.com/pion/webrtc/v4"
 	"log"
+	"net/http"
 )
 
-func NewLiveServer(ws *websocket.Conn) {
-	api := webrtc.NewAPI()
-	peerConnection, err := api.NewPeerConnection(webrtc.Configuration{})
-	if err != nil {
-		log.Println("Failed to create PeerConnection:", err)
-		return
-	}
-	peerConnection.OnICECandidate(func(c *webrtc.ICECandidate) {
-		if c == nil {
-			return
-		}
-		candidate := c.ToJSON()
-		err := ws.WriteJSON(candidate)
-		if err != nil {
-			log.Println("Failed to write ICE candidate:", err)
-		}
+func NewLiveServer(accessToken string) *neffos.Server {
+	upgrader := gorilla.Upgrader(grl.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
 	})
-	for {
-		var offer webrtc.SessionDescription
-		err := ws.ReadJSON(&offer)
-		if err != nil {
-			log.Println("Failed to read offer:", err)
-			break
-		}
+	ws := websocket.New(upgrader, websocket.Events{
+		websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
+			var msg Message
+			if err := json.Unmarshal(message.Body, &msg); err != nil {
+				rlt := Result{Code: 400, Msg: "bad request: message format is illegal."}
+				str, _ := json.Marshal(rlt)
+				conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, str))
+				return err
+			}
+			payload := msg.Payload
+			str := payload.(string)
+			conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, []byte(str)))
+			return nil
+		},
+		"ice-candidate": func(conn *neffos.NSConn, msg neffos.Message) error {
+			var candidate webrtc.ICECandidateInit
+			if err := json.Unmarshal(msg.Body, &candidate); err != nil {
+				return err
+			}
 
-		err = peerConnection.SetRemoteDescription(offer)
-		if err != nil {
-			log.Println("Failed to set remote description:", err)
-			break
-		}
+			peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
+			if err != nil {
+				return err
+			}
 
-		// Create an answer
-		answer, err := peerConnection.CreateAnswer(nil)
-		if err != nil {
-			log.Println("Failed to create answer:", err)
-			break
-		}
-
-		err = peerConnection.SetLocalDescription(answer)
-		if err != nil {
-			log.Println("Failed to set local description:", err)
-			break
-		}
-
-		err = ws.WriteJSON(answer)
-		if err != nil {
-			log.Println("Failed to write answer:", err)
-			break
-		}
+			return peerConnection.AddICECandidate(candidate)
+		},
+		"sdp": func(conn *neffos.NSConn, msg neffos.Message) error {
+			var offer webrtc.SessionDescription
+			if err := json.Unmarshal(msg.Body, &offer); err != nil {
+				return err
+			}
+			peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
+			if err != nil {
+				return err
+			}
+			// 设置远程描述
+			if err := peerConnection.SetRemoteDescription(offer); err != nil {
+				return err
+			}
+			// 创建应答
+			answer, err := peerConnection.CreateAnswer(nil)
+			if err != nil {
+				return err
+			}
+			// 设置本地描述
+			if err := peerConnection.SetLocalDescription(answer); err != nil {
+				return err
+			}
+			// 发送应答
+			answerJSON, err := json.Marshal(peerConnection.LocalDescription())
+			if err != nil {
+				log.Println("Failed to marshal answer:", err)
+				return nil
+			}
+			conn.Emit("sdp", answerJSON)
+			return nil
+		},
+	})
+	// 连接建立
+	ws.OnConnect = func(conn *neffos.Conn) error {
+		println(accessToken)
+		return nil
 	}
+	// 连接断开
+	ws.OnDisconnect = func(c *neffos.Conn) {
+
+	}
+	return ws
 }
