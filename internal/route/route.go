@@ -2,39 +2,31 @@ package route
 
 import (
 	. "canoe/internal/model"
-	"canoe/internal/service"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
-	"gorm.io/gorm"
 )
 
-func SetupRoutes(app *iris.Application, db *gorm.DB) {
+func SetupRoutes(app *iris.Application) {
 	party := app.Party("/canoe/api")
 	party.Get("/", func(ctx iris.Context) {
 		_ = ctx.JSON(Success(nil))
 	})
 	users := party.Party("/users")
-	UserRoutes(users, &service.UserService{Db: db})
+	UserRoutes(users)
 	sessions := party.Party("/sessions")
-	SessionRoutes(sessions, &service.SessionService{Db: db})
-
+	SessionRoutes(sessions)
 	// 普通聊天
-	party.Get("/chat/{accessToken:string}", func(ctx *context.Context) {
-		accessToken := ctx.Params().GetString("accessToken")
-		server := wsServer(accessToken)
-		_, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
-		if err != nil {
-			return
-		}
-	})
-
+	party.Get("/chat/{accessToken:string}", handleWs)
 	// 视频互动
-	party.Get("/live/{accessToken:string}", func(ctx *context.Context) {
-		accessToken := ctx.Params().GetString("accessToken")
-		server := wsServer(accessToken)
-		_, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
-		if err != nil {
-			return
-		}
-	})
+	party.Get("/live/{accessToken:string}", handleWs)
+}
+
+func handleWs(ctx *context.Context) {
+	accessToken := ctx.Params().GetString("accessToken")
+	server := wsServer(accessToken)
+	conn, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
+	defer conn.Close()
+	if err != nil {
+		return
+	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"canoe/internal/config"
+	"canoe/internal/service"
 	"github.com/kataras/iris/v12"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -10,50 +11,44 @@ import (
 	"syscall"
 )
 
+var cfg *config.Config
+var app *iris.Application
+var rpc *grpc.Server
+
 func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	running := runningContext{}
-	running.startup()
+	startup()
 	<-quit
-	running.shutdown()
-}
-
-type runningContext struct {
-	cfg  *config.Config
-	app  *iris.Application
-	grpc *grpc.Server
+	shutdown()
 }
 
 // 启动
-func (c *runningContext) startup() {
-	cfg := config.LoadConfig()
+func startup() {
+	cfg = config.LoadConfig()
 	db := connectDB(cfg.Database)
-	app, isStarted := startIris(cfg, db)
+	service.SetDB(db)
+	app, isStarted := startIris(cfg)
 	if !isStarted {
 		panic("Canoe Web-Server is not started")
 	}
 	log := app.Logger()
 	log.Info("Iris Server started")
-	gRpcServer := startGrpcServer(log)
+	rpc = startGrpcServer(log)
 	log.Info("Grpc Server started")
 	// do register
 	config.Register(cfg, log)
-	c.cfg = cfg
-	c.app = app
-	c.grpc = gRpcServer
-
 }
 
 // 关闭
-func (c *runningContext) shutdown() {
-	log := c.app.Logger()
+func shutdown() {
+	log := app.Logger()
 	// do de-register
 	log.Info("Server is shutting down...")
-	config.DeRegister(c.cfg, log)
-	c.grpc.GracefulStop()
+	config.DeRegister(cfg, log)
+	rpc.GracefulStop()
 	log.Info("Grpc Server gracefully stopped")
-	err := c.app.Shutdown(context.Background())
+	err := app.Shutdown(context.Background())
 	if err == nil {
 		log.Info("Iris Server gracefully stopped")
 	}

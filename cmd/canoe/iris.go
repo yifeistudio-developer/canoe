@@ -5,16 +5,15 @@ import (
 	"canoe/internal/route"
 	"github.com/kataras/iris/v12"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/logger"
-	"gorm.io/gorm"
 	"strconv"
 )
 
-func startIris(cfg *config.Config, db *gorm.DB) (*iris.Application, bool) {
+func startIris(cfg *config.Config) (*iris.Application, bool) {
 	app := iris.New()
 	app.Logger().Install(config.GetLogger(cfg.Logger))
 	app.UseGlobal(config.AccessLogger)
 	app.UseError(config.GlobalErrorHandler)
-	route.SetupRoutes(app, db)
+	route.SetupRoutes(app)
 	signal := make(chan bool)
 	defer close(signal)
 	go func() {
