@@ -46,7 +46,7 @@ type UserSession struct {
 
 // 消息
 
-type Message struct {
+type Envelope struct {
 	Type      int
 	Attr      int
 	SessionId int64

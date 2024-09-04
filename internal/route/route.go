@@ -3,7 +3,6 @@ package route
 import (
 	. "canoe/internal/model"
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/context"
 )
 
 func SetupRoutes(app *iris.Application) {
@@ -16,17 +15,23 @@ func SetupRoutes(app *iris.Application) {
 	sessions := party.Party("/sessions")
 	SessionRoutes(sessions)
 	// 普通聊天
-	party.Get("/chat/{accessToken:string}", handleWs)
+	party.Get("/chat/{accessToken:string}", func(ctx iris.Context) {
+		accessToken := ctx.Params().GetString("accessToken")
+		server := wsServer(accessToken, handleChatMsg)
+		_, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
+		//defer conn.Close()
+		if err != nil {
+			return
+		}
+	})
 	// 视频互动
-	party.Get("/live/{accessToken:string}", handleWs)
-}
-
-func handleWs(ctx *context.Context) {
-	accessToken := ctx.Params().GetString("accessToken")
-	server := wsServer(accessToken)
-	conn, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
-	defer conn.Close()
-	if err != nil {
-		return
-	}
+	party.Get("/live/{accessToken:string}", func(ctx iris.Context) {
+		accessToken := ctx.Params().GetString("accessToken")
+		server := wsServer(accessToken, handleLiveMsg)
+		_, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
+		//defer conn.Close()
+		if err != nil {
+			return
+		}
+	})
 }
