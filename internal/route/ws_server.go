@@ -55,6 +55,9 @@ func handleLiveMsg(conn *neffos.NSConn, message neffos.Message) error {
 		if err != nil {
 			return err
 		}
+		pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+			println("handle ontrack message")
+		})
 		conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, resp))
 	case "candidate":
 		if pc, ok := peers["client"]; ok {
