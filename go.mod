@@ -3,16 +3,16 @@ module canoe
 go 1.22.0
 
 require (
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
-	github.com/kataras/golog v0.1.11
+	github.com/kataras/golog v0.1.12
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.1.1
 	github.com/pion/webrtc/v4 v4.0.0-beta.29
 	golang.org/x/net v0.27.0
-	google.golang.org/grpc v1.48.0
+	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.11
@@ -29,7 +29,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
