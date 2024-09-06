@@ -81,6 +81,7 @@ func handleLiveMsg(conn *neffos.NSConn, message neffos.Message) error {
 						fmt.Printf("write error: %s\n", err)
 					}
 				}
+
 			}()
 			defer func(rtpSender *webrtc.RTPSender) {
 				err := rtpSender.Stop()
@@ -145,7 +146,6 @@ func wsServer(accessToken string, handler neffos.MessageHandlerFunc) *neffos.Ser
 		return nil
 	}
 	// 连接断开
-	ws.OnDisconnect = func(c *neffos.Conn) {
-	}
+	ws.OnDisconnect = func(c *neffos.Conn) {}
 	return ws
 }
