@@ -75,13 +75,14 @@ func handleLiveMsg(conn *neffos.NSConn, message neffos.Message) error {
 					rtpPacket, _, err := track.ReadRTP()
 					if err != nil {
 						fmt.Printf("handle error: %s\n", err)
+						break
 					}
 					err = localTrack.WriteRTP(rtpPacket)
 					if err != nil {
 						fmt.Printf("write error: %s\n", err)
+						break
 					}
 				}
-
 			}()
 			defer func(rtpSender *webrtc.RTPSender) {
 				err := rtpSender.Stop()
