@@ -71,6 +71,7 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 		return err
 	}
 	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+		// 消息转播
 		fmt.Printf("接收到轨道: %s\n", track.Kind().String())
 		fmt.Println(track.Codec().RTPCodecCapability)
 		go func() {
@@ -108,6 +109,7 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 	return nil
 }
 
+// 处理视频消息
 func handleLiveMsg(conn *neffos.NSConn, message neffos.Message) error {
 	var msg SignalingMessage
 	err := message.Unmarshal(&msg)
@@ -153,11 +155,14 @@ func wsServer(accessToken string, handler neffos.MessageHandlerFunc) *neffos.Ser
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
 	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: handler})
-	// 连接建立
+	// 当连接建立
+	// 初始化用户回话信息
 	ws.OnConnect = func(conn *neffos.Conn) error {
+		logger.Infof("got new connection: access-token = %s", accessToken)
 		return nil
 	}
-	// 连接断开
-	ws.OnDisconnect = func(c *neffos.Conn) {}
+	ws.OnDisconnect = func(c *neffos.Conn) {
+		logger.Infof("disconnected: access-token = %s", accessToken)
+	}
 	return ws
 }
