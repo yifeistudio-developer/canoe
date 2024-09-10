@@ -86,7 +86,7 @@ func LoadConfig() *Config {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %s", err)
+		//log.Fatalf("Failed to load configuration: %s", err)
 	}
 	return &cfg
 }

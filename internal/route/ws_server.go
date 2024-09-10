@@ -28,6 +28,86 @@ type SignalingMessage struct {
 	Candidate webrtc.ICECandidateInit `json:"candidate,omitempty"`
 }
 
+func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
+	pc, err := w.NewPeerConnection(webrtc.Configuration{})
+	if err != nil {
+		return err
+	}
+	audioTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeOpus,
+		ClockRate: 48000,
+		Channels:  2,
+	}, "audio", "pion-audio")
+	if err != nil {
+		return err
+	}
+	_, err = pc.AddTrack(audioTrack)
+	videoTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeVP8,
+		ClockRate: 90000,
+	}, "video", "pion-video")
+	if err != nil {
+		return err
+	}
+	_, err = pc.AddTrack(videoTrack)
+	peers["client"] = pc
+	offer := webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: msg.SDP}
+	if err := pc.SetRemoteDescription(offer); err != nil {
+		return err
+	}
+	answer, err := pc.CreateAnswer(nil)
+	if err != nil {
+		return err
+	}
+	if err := pc.SetLocalDescription(answer); err != nil {
+		return err
+	}
+	answerMsg := SignalingMessage{
+		Type: webrtc.SDPTypeAnswer.String(),
+		SDP:  pc.LocalDescription().SDP,
+	}
+	resp, err := json.Marshal(answerMsg)
+	if err != nil {
+		return err
+	}
+	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+		fmt.Printf("接收到轨道: %s\n", track.Kind().String())
+		fmt.Println(track.Codec().RTPCodecCapability)
+		go func() {
+			buf := make([]byte, 1500)
+			for {
+				i, _, readErr := track.Read(buf)
+				if readErr != nil {
+					panic(readErr)
+				}
+				if track.Kind() == webrtc.RTPCodecTypeAudio {
+					_, err = audioTrack.Write(buf[:i])
+				} else if track.Kind() == webrtc.RTPCodecTypeVideo {
+					_, err = videoTrack.Write(buf[:i])
+				}
+				if err != nil {
+				}
+			}
+		}()
+	})
+	pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
+		if candidate == nil {
+			return
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		candidateJson := candidate.ToJSON()
+		candidateMsg := SignalingMessage{
+			Type:      "candidate",
+			Candidate: candidateJson,
+		}
+		candidateStr, _ := json.Marshal(candidateMsg)
+		conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, candidateStr))
+	})
+	conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, resp))
+	return nil
+}
+
 func handleLiveMsg(conn *neffos.NSConn, message neffos.Message) error {
 	var msg SignalingMessage
 	err := message.Unmarshal(&msg)
@@ -36,79 +116,10 @@ func handleLiveMsg(conn *neffos.NSConn, message neffos.Message) error {
 	}
 	switch msg.Type {
 	case "offer":
-		pc, err := w.NewPeerConnection(webrtc.Configuration{})
+		err := onOfferMsg(conn, &msg)
 		if err != nil {
 			return err
 		}
-		peers["client"] = pc
-		offer := webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: msg.SDP}
-		if err := pc.SetRemoteDescription(offer); err != nil {
-			return err
-		}
-		answer, err := pc.CreateAnswer(nil)
-		if err != nil {
-			return err
-		}
-		if err := pc.SetLocalDescription(answer); err != nil {
-			return err
-		}
-		answerMsg := SignalingMessage{
-			Type: webrtc.SDPTypeAnswer.String(),
-			SDP:  pc.LocalDescription().SDP,
-		}
-		resp, err := json.Marshal(answerMsg)
-		if err != nil {
-			return err
-		}
-		pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-			fmt.Printf("handle track message: %s \n", track.Codec().MimeType)
-			localTrack, err2 := webrtc.NewTrackLocalStaticRTP(track.Codec().RTPCodecCapability, track.ID(), track.StreamID())
-			if err2 != nil {
-				fmt.Printf("get track err: %s", err2)
-			}
-			rtpSender, err2 := pc.AddTrack(localTrack)
-			if err2 != nil {
-				fmt.Println("add track error:", err2)
-			}
-			go func() {
-				for {
-					rtpPacket, _, err := track.ReadRTP()
-					if err != nil {
-						fmt.Printf("handle error: %s\n", err)
-						break
-					}
-					err = localTrack.WriteRTP(rtpPacket)
-					if err != nil {
-						fmt.Printf("write error: %s\n", err)
-						break
-					}
-				}
-			}()
-			defer func(rtpSender *webrtc.RTPSender) {
-				err := rtpSender.Stop()
-				if err != nil {
-					fmt.Printf("stop err: %s\n", err)
-				}
-			}(rtpSender)
-		})
-		pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-			fmt.Println("ICE Connection State has changed. ", state.String())
-		})
-		pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
-			if candidate == nil {
-				return
-			}
-			mu.Lock()
-			defer mu.Unlock()
-			candidateJson := candidate.ToJSON()
-			candidateMsg := SignalingMessage{
-				Type:      "candidate",
-				Candidate: candidateJson,
-			}
-			candidateStr, _ := json.Marshal(candidateMsg)
-			conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, candidateStr))
-		})
-		conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, resp))
 	case "candidate":
 		if pc, ok := peers["client"]; ok {
 			candidate := webrtc.ICECandidateInit{Candidate: msg.Candidate.Candidate}
