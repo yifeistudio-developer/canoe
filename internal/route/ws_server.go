@@ -2,6 +2,7 @@ package route
 
 import (
 	. "canoe/internal/model"
+	"canoe/internal/remote"
 	"encoding/json"
 	"fmt"
 	grl "github.com/gorilla/websocket"
@@ -155,12 +156,17 @@ func wsServer(accessToken string, handler neffos.MessageHandlerFunc) *neffos.Ser
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
 	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: handler})
+
 	// 当连接建立
 	// 初始化用户回话信息
 	ws.OnConnect = func(conn *neffos.Conn) error {
 		logger.Infof("got new connection: access-token = %s", accessToken)
+		profile := remote.GetUserProfile(accessToken)
+		fmt.Println(profile)
 		return nil
 	}
+
+	// 清理回话信息
 	ws.OnDisconnect = func(c *neffos.Conn) {
 		logger.Infof("disconnected: access-token = %s", accessToken)
 	}

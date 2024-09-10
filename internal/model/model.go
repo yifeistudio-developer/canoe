@@ -53,3 +53,9 @@ type Envelope struct {
 	UserId    int64
 	Payload   interface{}
 }
+
+type AlpsUserProfile struct {
+	Username string
+	Avatar   string
+	Nickname string
+}
