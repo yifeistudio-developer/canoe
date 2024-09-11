@@ -80,7 +80,7 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 			for {
 				i, _, readErr := track.Read(buf)
 				if readErr != nil {
-					panic(readErr)
+					break
 				}
 				if track.Kind() == webrtc.RTPCodecTypeAudio {
 					_, err = audioTrack.Write(buf[:i])
