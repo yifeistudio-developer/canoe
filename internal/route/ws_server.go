@@ -10,7 +10,10 @@ import (
 	"github.com/kataras/neffos"
 	"github.com/kataras/neffos/gorilla"
 	"github.com/pion/webrtc/v4"
+	"io"
+	"log"
 	"net/http"
+	"os/exec"
 	"sync"
 )
 
@@ -72,25 +75,10 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 		return err
 	}
 	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+
 		// 消息转播
-		fmt.Printf("接收到轨道: %s\n", track.Kind().String())
-		fmt.Println(track.Codec().RTPCodecCapability)
-		go func() {
-			buf := make([]byte, 1500)
-			for {
-				i, _, readErr := track.Read(buf)
-				if readErr != nil {
-					break
-				}
-				if track.Kind() == webrtc.RTPCodecTypeAudio {
-					_, err = audioTrack.Write(buf[:i])
-				} else if track.Kind() == webrtc.RTPCodecTypeVideo {
-					_, err = videoTrack.Write(buf[:i])
-				}
-				if err != nil {
-				}
-			}
-		}()
+		//go passBackStream(track, audioTrack, videoTrack)
+		go pushRtmp(track)
 	})
 	pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 		if candidate == nil {
@@ -171,4 +159,74 @@ func wsServer(accessToken string, handler neffos.MessageHandlerFunc) *neffos.Ser
 		logger.Infof("disconnected: access-token = %s", accessToken)
 	}
 	return ws
+}
+
+// handle track
+func passBackStream(track *webrtc.TrackRemote, audioTrack *webrtc.TrackLocalStaticRTP, videoTrack *webrtc.TrackLocalStaticRTP) {
+	buf := make([]byte, 1500)
+	for {
+		i, _, readErr := track.Read(buf)
+		if readErr != nil {
+			break
+		}
+		if track.Kind() == webrtc.RTPCodecTypeAudio {
+			_, _ = audioTrack.Write(buf[:i])
+		} else if track.Kind() == webrtc.RTPCodecTypeVideo {
+			_, _ = videoTrack.Write(buf[:i])
+		}
+	}
+}
+
+func pushRtmp(track *webrtc.TrackRemote) {
+	if track.Kind() == webrtc.RTPCodecTypeAudio {
+		return
+	}
+	// Start FFmpeg process
+	//cmd := exec.Command("ffmpeg", "-i", "-", "-f", "flv", "rtmp://localhost:1935/stream/canoe")
+	// Create a pipe for passing data between Go and ffmpeg
+	r, w := io.Pipe()
+
+	// Run ffmpeg to push the stream to RTMP
+	ffmpegCmd := exec.Command(
+		"ffmpeg",
+		"-f", "h264", // Indicate H.264 input format
+		"-i", "pipe:0", // Input from stdin (pipe)
+		"-c:v", "libx264", // Use x264 codec
+		"-f", "flv", // Output format
+		"rtmp://localhost:1935/stream/canoe", // RTMP URL
+	)
+
+	// Capture stderr to diagnose any issues
+	ffmpegCmd.Stderr = log.Writer() // Redirect ffmpeg stderr to Go's logger
+
+	ffmpegCmd.Stdin = r // Pipe RTP stream to ffmpeg
+
+	// Start ffmpeg in a goroutine
+	go func() {
+		if err := ffmpegCmd.Run(); err != nil {
+			log.Printf("Failed to run ffmpeg: %v", err)
+		}
+	}()
+
+	// Buffer to store the incoming RTP packets
+	packet := make([]byte, 1500)
+
+	for {
+		// Read RTP packet from the WebRTC track
+		n, _, readErr := track.Read(packet)
+		if readErr != nil {
+			log.Printf("Error reading from track: %v", readErr)
+			break
+		}
+		// Write the raw RTP packet (H.264) to the ffmpeg pipe
+		if _, writeErr := w.Write(packet[:n]); writeErr != nil {
+			log.Printf("Error writing to ffmpeg pipe: %v", writeErr)
+			break
+		}
+	}
+	// Close the pipe when done
+	err := w.Close()
+	if err != nil {
+		return
+	}
 }
