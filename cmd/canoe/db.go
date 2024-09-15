@@ -10,11 +10,11 @@ import (
 var Database *gorm.DB
 
 func connectDB(cfg struct {
-	Host     string `envconfig:"DATABASE_HOST" default:"localhost"`
-	Port     uint64 `envconfig:"DATABASE_PORT" default:"5432"`
-	Username string `envconfig:"DATABASE_USERNAME" default:"canoe"`
-	Password string `envconfig:"DATABASE_PASSWORD" default:"canoe110930008"`
-	DbName   string `envconfig:"DATABASE_NAME" default:"canoe"`
+	Host     string `envconfig:"DB_HOST" default:"localhost"`
+	Port     uint64 `envconfig:"DB_PORT" default:"5432"`
+	Username string `envconfig:"DB_USERNAME" default:"canoe"`
+	Password string `envconfig:"DB_PASSWORD" default:"canoe110930008"`
+	DbName   string `envconfig:"DB_NAME" default:"canoe"`
 }) *gorm.DB {
 	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
 		cfg.Host, cfg.Port, cfg.DbName, cfg.Username, cfg.Password)

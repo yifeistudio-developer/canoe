@@ -10,9 +10,8 @@ import (
 	"github.com/kataras/neffos"
 	"github.com/kataras/neffos/gorilla"
 	"github.com/pion/webrtc/v4"
-	"io"
-	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"sync"
 )
@@ -78,7 +77,17 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 
 		// 消息转播
 		//go passBackStream(track, audioTrack, videoTrack)
-		go pushRtmp(track)
+		//pushRtmp(track)
+		go func() {
+			codec := track.Codec().MimeType
+			if codec == webrtc.MimeTypeH264 {
+				// For video, pass it to FFmpeg
+				pushVideoToFFmpeg(track)
+			} else if codec == webrtc.MimeTypeOpus {
+				// For audio, pass it to FFmpeg
+				pushAudioToFFmpeg(track)
+			}
+		}()
 	})
 	pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 		if candidate == nil {
@@ -181,52 +190,91 @@ func pushRtmp(track *webrtc.TrackRemote) {
 	if track.Kind() == webrtc.RTPCodecTypeAudio {
 		return
 	}
-	// Start FFmpeg process
-	//cmd := exec.Command("ffmpeg", "-i", "-", "-f", "flv", "rtmp://localhost:1935/stream/canoe")
-	// Create a pipe for passing data between Go and ffmpeg
-	r, w := io.Pipe()
-
-	// Run ffmpeg to push the stream to RTMP
-	ffmpegCmd := exec.Command(
-		"ffmpeg",
-		"-f", "h264", // Indicate H.264 input format
-		"-i", "pipe:0", // Input from stdin (pipe)
-		"-c:v", "libx264", // Use x264 codec
-		"-f", "flv", // Output format
-		"rtmp://localhost:1935/stream/canoe", // RTMP URL
-	)
-
-	// Capture stderr to diagnose any issues
-	ffmpegCmd.Stderr = log.Writer() // Redirect ffmpeg stderr to Go's logger
-
-	ffmpegCmd.Stdin = r // Pipe RTP stream to ffmpeg
-
-	// Start ffmpeg in a goroutine
+	ffmpegCmd := exec.Command("ffmpeg",
+		"-i", "pipe:0", // 使用 pipe 输入
+		"-c:v", "libx264", // 编码格式为 h264
+		"-f", "flv", // 输出为 FLV 格式
+		"rtmp://localhost:1935/stream/canoe") // 推送到 RTMP 地址
+	stdin, err := ffmpegCmd.StdinPipe()
+	if err != nil {
+		fmt.Println("error: ", err)
+	}
 	go func() {
-		if err := ffmpegCmd.Run(); err != nil {
-			log.Printf("Failed to run ffmpeg: %v", err)
+		err := ffmpegCmd.Start()
+		if err != nil {
+			panic(err)
+		}
+		for {
+			packet, _, err := track.ReadRTP()
+			if err != nil {
+				panic(err)
+			}
+			// Write RTP packet to FFmpeg
+			size, err := stdin.Write(packet.Payload)
+			if err != nil {
+				return
+			}
+			fmt.Println(size)
 		}
 	}()
+}
 
-	// Buffer to store the incoming RTP packets
-	packet := make([]byte, 1500)
-
-	for {
-		// Read RTP packet from the WebRTC track
-		n, _, readErr := track.Read(packet)
-		if readErr != nil {
-			log.Printf("Error reading from track: %v", readErr)
-			break
-		}
-		// Write the raw RTP packet (H.264) to the ffmpeg pipe
-		if _, writeErr := w.Write(packet[:n]); writeErr != nil {
-			log.Printf("Error writing to ffmpeg pipe: %v", writeErr)
-			break
-		}
-	}
-	// Close the pipe when done
-	err := w.Close()
+func pushVideoToFFmpeg(track *webrtc.TrackRemote) {
+	// Start FFmpeg process to push video stream to RTMP server
+	cmd := exec.Command("ffmpeg",
+		"-i", "pipe:0", // Input from stdin
+		"-c:v", "copy", // Video codec (copy H.264 directly)
+		"-f", "flv", // Output format RTMP/FLV
+		"rtmp://localhost:1935/stream/canoe", // RTMP URL
+	)
+	cmd.Stderr = os.Stderr
+	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return
+		panic(err)
 	}
+	go func() {
+		err := cmd.Start()
+		if err != nil {
+			panic(err)
+		}
+
+		for {
+			packet, _, err := track.ReadRTP()
+			if err != nil {
+				panic(err)
+			}
+
+			// Write RTP packet to FFmpeg
+			stdin.Write(packet.Payload)
+		}
+	}()
+}
+
+func pushAudioToFFmpeg(track *webrtc.TrackRemote) {
+	// Similar process for audio stream (Opus to AAC or MP3 conversion)
+	cmd := exec.Command("ffmpeg",
+		"-i", "pipe:0", // Input from stdin
+		"-c:a", "aac", // Audio codec (convert Opus to AAC)
+		"-f", "flv", // Output format RTMP/FLV
+		"rtmp://localhost:1935/stream/canoe", // RTMP URL
+	)
+	cmd.Stderr = os.Stderr
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		err := cmd.Start()
+		if err != nil {
+			panic(err)
+		}
+		for {
+			packet, _, err := track.ReadRTP()
+			if err != nil {
+				panic(err)
+			}
+			// Write RTP packet to FFmpeg
+			stdin.Write(packet.Payload)
+		}
+	}()
 }
