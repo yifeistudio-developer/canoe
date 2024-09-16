@@ -74,17 +74,12 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 		return err
 	}
 	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-
-		// 消息转播
-		//go passBackStream(track, audioTrack, videoTrack)
-		//pushRtmp(track)
+		fmt.Printf("handle track %v, %v\n", track.Codec().MimeType, track.Kind().String())
 		go func() {
 			codec := track.Codec().MimeType
-			if codec == webrtc.MimeTypeH264 {
-				// For video, pass it to FFmpeg
+			if codec == webrtc.MimeTypeVP8 {
 				pushVideoToFFmpeg(track)
 			} else if codec == webrtc.MimeTypeOpus {
-				// For audio, pass it to FFmpeg
 				pushAudioToFFmpeg(track)
 			}
 		}()
@@ -221,12 +216,13 @@ func pushRtmp(track *webrtc.TrackRemote) {
 
 func pushVideoToFFmpeg(track *webrtc.TrackRemote) {
 	// Start FFmpeg process to push video stream to RTMP server
-	cmd := exec.Command("ffmpeg",
-		"-i", "pipe:0", // Input from stdin
-		"-c:v", "copy", // Video codec (copy H.264 directly)
-		"-f", "flv", // Output format RTMP/FLV
-		"rtmp://localhost:1935/stream/canoe", // RTMP URL
-	)
+	ffmpegArgs := []string{
+		"-i", "pipe:0", // Input from pipe (video)
+		"-c:v", "libx264", // Re-encode using x264
+		"-f", "flv", // Output format FLV
+		"rtmp://localhost:1935/stream/canoe", // RTMP server URL
+	}
+	cmd := exec.Command("ffmpeg", ffmpegArgs...)
 	cmd.Stderr = os.Stderr
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -235,17 +231,21 @@ func pushVideoToFFmpeg(track *webrtc.TrackRemote) {
 	go func() {
 		err := cmd.Start()
 		if err != nil {
-			panic(err)
+			fmt.Println("start ffmpeg error", err)
 		}
 
 		for {
 			packet, _, err := track.ReadRTP()
 			if err != nil {
-				panic(err)
+				fmt.Printf("read rpt error: %v\n", err)
+				break
 			}
-
 			// Write RTP packet to FFmpeg
-			stdin.Write(packet.Payload)
+			_, err = stdin.Write(packet.Payload)
+			if err != nil {
+				fmt.Printf("write rpt error: %v\n", err)
+				return
+			}
 		}
 	}()
 }
@@ -261,7 +261,7 @@ func pushAudioToFFmpeg(track *webrtc.TrackRemote) {
 	cmd.Stderr = os.Stderr
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		panic(err)
+		fmt.Println("error: ", err)
 	}
 	go func() {
 		err := cmd.Start()
@@ -271,10 +271,13 @@ func pushAudioToFFmpeg(track *webrtc.TrackRemote) {
 		for {
 			packet, _, err := track.ReadRTP()
 			if err != nil {
-				panic(err)
+				fmt.Printf("Read RTP error: %v\n", err)
+				break
 			}
-			// Write RTP packet to FFmpeg
-			stdin.Write(packet.Payload)
+			_, err = stdin.Write(packet.Payload)
+			if err != nil {
+				return
+			}
 		}
 	}()
 }
