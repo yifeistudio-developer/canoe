@@ -11,8 +11,6 @@ import (
 	"github.com/kataras/neffos/gorilla"
 	"github.com/pion/webrtc/v4"
 	"net/http"
-	"os"
-	"os/exec"
 	"sync"
 )
 
@@ -73,17 +71,11 @@ func onOfferMsg(conn *neffos.NSConn, msg *SignalingMessage) error {
 	if err != nil {
 		return err
 	}
-	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		fmt.Printf("handle track %v, %v\n", track.Codec().MimeType, track.Kind().String())
-		go func() {
-			codec := track.Codec().MimeType
-			if codec == webrtc.MimeTypeVP8 {
-				pushVideoToFFmpeg(track)
-			} else if codec == webrtc.MimeTypeOpus {
-				pushAudioToFFmpeg(track)
-			}
-		}()
-	})
+	//pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+	//	go liveShow(track)
+	//	//go passBackStream(track, audioTrack, videoTrack)
+	//})
+	t(pc)
 	pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 		if candidate == nil {
 			return
@@ -179,105 +171,4 @@ func passBackStream(track *webrtc.TrackRemote, audioTrack *webrtc.TrackLocalStat
 			_, _ = videoTrack.Write(buf[:i])
 		}
 	}
-}
-
-func pushRtmp(track *webrtc.TrackRemote) {
-	if track.Kind() == webrtc.RTPCodecTypeAudio {
-		return
-	}
-	ffmpegCmd := exec.Command("ffmpeg",
-		"-i", "pipe:0", // 使用 pipe 输入
-		"-c:v", "libx264", // 编码格式为 h264
-		"-f", "flv", // 输出为 FLV 格式
-		"rtmp://localhost:1935/stream/canoe") // 推送到 RTMP 地址
-	stdin, err := ffmpegCmd.StdinPipe()
-	if err != nil {
-		fmt.Println("error: ", err)
-	}
-	go func() {
-		err := ffmpegCmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		for {
-			packet, _, err := track.ReadRTP()
-			if err != nil {
-				panic(err)
-			}
-			// Write RTP packet to FFmpeg
-			size, err := stdin.Write(packet.Payload)
-			if err != nil {
-				return
-			}
-			fmt.Println(size)
-		}
-	}()
-}
-
-func pushVideoToFFmpeg(track *webrtc.TrackRemote) {
-	// Start FFmpeg process to push video stream to RTMP server
-	ffmpegArgs := []string{
-		"-i", "pipe:0", // Input from pipe (video)
-		"-c:v", "libx264", // Re-encode using x264
-		"-f", "flv", // Output format FLV
-		"rtmp://localhost:1935/stream/canoe", // RTMP server URL
-	}
-	cmd := exec.Command("ffmpeg", ffmpegArgs...)
-	cmd.Stderr = os.Stderr
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		panic(err)
-	}
-	go func() {
-		err := cmd.Start()
-		if err != nil {
-			fmt.Println("start ffmpeg error", err)
-		}
-
-		for {
-			packet, _, err := track.ReadRTP()
-			if err != nil {
-				fmt.Printf("read rpt error: %v\n", err)
-				break
-			}
-			// Write RTP packet to FFmpeg
-			_, err = stdin.Write(packet.Payload)
-			if err != nil {
-				fmt.Printf("write rpt error: %v\n", err)
-				return
-			}
-		}
-	}()
-}
-
-func pushAudioToFFmpeg(track *webrtc.TrackRemote) {
-	// Similar process for audio stream (Opus to AAC or MP3 conversion)
-	cmd := exec.Command("ffmpeg",
-		"-i", "pipe:0", // Input from stdin
-		"-c:a", "aac", // Audio codec (convert Opus to AAC)
-		"-f", "flv", // Output format RTMP/FLV
-		"rtmp://localhost:1935/stream/canoe", // RTMP URL
-	)
-	cmd.Stderr = os.Stderr
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		fmt.Println("error: ", err)
-	}
-	go func() {
-		err := cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-		for {
-			packet, _, err := track.ReadRTP()
-			if err != nil {
-				fmt.Printf("Read RTP error: %v\n", err)
-				break
-			}
-			_, err = stdin.Write(packet.Payload)
-			if err != nil {
-				return
-			}
-		}
-	}()
 }

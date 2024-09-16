@@ -1,6 +1,7 @@
 package route
 
 import (
+	"canoe/internal/handler"
 	. "canoe/internal/model"
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
@@ -22,7 +23,7 @@ func SetupRoutes(app *iris.Application) {
 	// 普通聊天
 	party.Get("/chat/{accessToken:string}", func(ctx iris.Context) {
 		accessToken := ctx.Params().GetString("accessToken")
-		server := wsServer(accessToken, handleChatMsg)
+		server := handler.HandleWS(accessToken, handler.HandlerMap[handler.WebSocket])
 		_, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
 		if err != nil {
 			logger.Errorf("websocket upgrade failed: %v", err)
@@ -33,7 +34,7 @@ func SetupRoutes(app *iris.Application) {
 	// 视频互动
 	party.Get("/live/{accessToken:string}", func(ctx iris.Context) {
 		accessToken := ctx.Params().GetString("accessToken")
-		server := wsServer(accessToken, handleLiveMsg)
+		server := handler.HandleWS(accessToken, handler.HandlerMap[handler.WebRTC])
 		_, err := server.Upgrade(ctx.ResponseWriter(), ctx.Request(), nil, nil)
 		if err != nil {
 			logger.Errorf("websocket upgrade failed: %v", err)
