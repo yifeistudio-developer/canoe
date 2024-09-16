@@ -5,10 +5,10 @@ import (
 	"canoe/internal/remote"
 	"encoding/json"
 	grl "github.com/gorilla/websocket"
+	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12/websocket"
 	"github.com/kataras/neffos"
 	"github.com/kataras/neffos/gorilla"
-	"github.com/nacos-group/nacos-sdk-go/v2/common/logger"
 	"net/http"
 )
 
@@ -16,6 +16,12 @@ const (
 	WebSocket = iota
 	WebRTC
 )
+
+var logger *golog.Logger
+
+func SetLogger(l *golog.Logger) {
+	logger = l
+}
 
 type MsgHandler func(conn *neffos.NSConn, username string, message neffos.Message) error
 

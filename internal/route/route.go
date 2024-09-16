@@ -11,6 +11,8 @@ var logger *golog.Logger
 
 func SetupRoutes(app *iris.Application) {
 	logger = app.Logger()
+	handler.SetLogger(logger)
+
 	party := app.Party("/canoe/api")
 	party.Get("/", func(ctx iris.Context) {
 		_ = ctx.JSON(Success(nil))

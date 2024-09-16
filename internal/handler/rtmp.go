@@ -37,13 +37,13 @@ func processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConn
 	for _, c := range udpConns {
 		var raddr *net.UDPAddr
 		if raddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", c.port)); err != nil {
-			fmt.Println(err)
+			logger.Errorf("handle resolve udp addr error: %v", err)
 			cancel()
 			return
 		}
 		// Dial udp
 		if c.conn, err = net.DialUDP("udp", laddr, raddr); err != nil {
-			fmt.Println(err)
+			logger.Errorf("handle dial udp error: %v", err)
 			cancel()
 			return
 		}
@@ -61,7 +61,9 @@ func processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConn
 		ticker := time.NewTicker(time.Second * 2)
 		for range ticker.C {
 			if rtcpErr := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}}); rtcpErr != nil {
-				fmt.Println(rtcpErr)
+				logger.Errorf("handle write rtp error: %v", rtcpErr)
+				cancel()
+				return
 			}
 			if errors.Is(context.Canceled, ctx.Err()) {
 				break
@@ -74,13 +76,13 @@ func processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConn
 		// Read
 		n, _, err := track.Read(b)
 		if err != nil && err != io.EOF {
-			fmt.Println(err)
+			logger.Errorf("handle read rtp error: %v", err)
 			cancel()
 			break
 		}
 		// Write
 		if _, err = c.conn.Write(b[:n]); err != nil {
-			fmt.Println(err)
+			logger.Errorf("handle write rtp error: %v", err)
 			if errors.Is(context.Canceled, ctx.Err()) {
 				break
 			}

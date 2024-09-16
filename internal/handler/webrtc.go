@@ -128,6 +128,8 @@ func initPeerConnection() (*webrtc.PeerConnection, error) {
 	return api.NewPeerConnection(config)
 }
 
+//视频通话
+
 func processDialog(username string, track *webrtc.TrackRemote) {
 
 }
