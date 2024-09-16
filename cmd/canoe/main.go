@@ -28,7 +28,8 @@ func startup() {
 	cfg = config.LoadConfig()
 	db := connectDB(cfg.Database)
 	service.SetDB(db)
-	app, isStarted := startIris(cfg)
+	isStarted := false
+	app, isStarted = startIris(cfg)
 	if !isStarted {
 		panic("Canoe Web-Server is not started")
 	}

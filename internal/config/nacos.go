@@ -50,7 +50,7 @@ func DeRegister(cfg *Config, log *golog.Logger) {
 	if err != nil {
 		log.Fatal("deregister server failed.", err)
 	}
-	log.Info("deregister server successfully. %v", instance)
+	log.Infof("deregister server successfully. %v", instance)
 }
 
 func GetService(serviceName string) (model.Service, error) {
