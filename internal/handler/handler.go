@@ -3,6 +3,7 @@ package handler
 import (
 	. "canoe/internal/model"
 	"canoe/internal/remote"
+	"context"
 	"encoding/json"
 	grl "github.com/gorilla/websocket"
 	"github.com/kataras/golog"
@@ -21,18 +22,23 @@ var logger *golog.Logger
 
 func SetLogger(l *golog.Logger) {
 	logger = l
+	initUDP()
 }
 
-type MsgHandler func(conn *neffos.NSConn, username string, message neffos.Message) error
+type MsgHandler func(ctx context.Context,
+	cancel context.CancelFunc,
+	conn *neffos.NSConn,
+	username string,
+	message neffos.Message) error
 
-var HandlerMap = make(map[uint]func(conn *neffos.NSConn, username string, message neffos.Message) error)
+var HandlerMap = make(map[uint]func(ctx context.Context, cancel context.CancelFunc, conn *neffos.NSConn, username string, message neffos.Message) error)
 
 func init() {
 	HandlerMap[WebSocket] = handleWebSocket
 	HandlerMap[WebRTC] = handleWebRTC
 }
 
-func handleWebSocket(conn *neffos.NSConn, username string, message neffos.Message) error {
+func handleWebSocket(ctx context.Context, cancel context.CancelFunc, conn *neffos.NSConn, username string, message neffos.Message) error {
 	var evp Envelope
 	err := message.Unmarshal(&evp)
 	if err != nil {
@@ -50,12 +56,13 @@ func handleWebSocket(conn *neffos.NSConn, username string, message neffos.Messag
 // 处理websocket 连接
 
 func HandleWS(accessToken string, handler MsgHandler) *neffos.Server {
+	ctx, cancel := context.WithCancel(context.Background())
 	profile := remote.GetUserProfile(accessToken)
 	upgrader := gorilla.Upgrader(grl.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
 	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
-		return handler(conn, profile.Username, message)
+		return handler(ctx, cancel, conn, profile.Username, message)
 	}})
 
 	// 当连接建立
@@ -68,6 +75,7 @@ func HandleWS(accessToken string, handler MsgHandler) *neffos.Server {
 	// 清理会话信息
 	ws.OnDisconnect = func(c *neffos.Conn) {
 		delete(peers, profile.Username)
+		cancel()
 		logger.Infof("disconnected: access-token = %s", accessToken)
 	}
 	return ws

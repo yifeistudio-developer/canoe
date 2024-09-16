@@ -18,38 +18,41 @@ type udpConn struct {
 	port int
 }
 
-func processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConnection) {
-	streamURL := fmt.Sprintf("%s/%s", "rtmp://localhost:1935/stream", username)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+var udpConns = map[webrtc.RTPCodecType]*udpConn{
+	webrtc.RTPCodecTypeAudio: {port: 4000},
+	webrtc.RTPCodecTypeVideo: {port: 4002},
+}
 
+func initUDP() {
 	// Create a local addr
 	var laddr *net.UDPAddr
 	var err error
 	if laddr, err = net.ResolveUDPAddr("udp", "127.0.0.1:"); err != nil {
-		cancel()
+		logger.Errorf("resolve udp addr err: %v", err)
 		return
-	}
-	udpConns := map[webrtc.RTPCodecType]*udpConn{
-		webrtc.RTPCodecTypeAudio: {port: 4000},
-		webrtc.RTPCodecTypeVideo: {port: 4002},
 	}
 	for _, c := range udpConns {
 		var raddr *net.UDPAddr
 		if raddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%d", c.port)); err != nil {
 			logger.Errorf("handle resolve udp addr error: %v", err)
-			cancel()
 			return
 		}
 		// Dial udp
 		if c.conn, err = net.DialUDP("udp", laddr, raddr); err != nil {
 			logger.Errorf("handle dial udp error: %v", err)
-			cancel()
 			return
 		}
 	}
+}
 
-	err = startFFmpeg(ctx, streamURL)
+func processLive(ctx context.Context, cancel context.CancelFunc, username string, track *webrtc.TrackRemote, pc *webrtc.PeerConnection) {
+	streamURL := fmt.Sprintf("%s/%s", "rtmp://localhost:1935/stream", username)
+	err := startFFmpeg(ctx, streamURL)
+	if err != nil {
+		logger.Errorf("start ffmpeg error: %v", err)
+		cancel()
+		return
+	}
 	// Retrieve udp connection
 	c, ok := udpConns[track.Kind()]
 	if !ok {
@@ -62,8 +65,6 @@ func processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConn
 		for range ticker.C {
 			if rtcpErr := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}}); rtcpErr != nil {
 				logger.Errorf("handle write rtp error: %v", rtcpErr)
-				cancel()
-				return
 			}
 			if errors.Is(context.Canceled, ctx.Err()) {
 				break

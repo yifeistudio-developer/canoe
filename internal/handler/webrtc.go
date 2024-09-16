@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/kataras/neffos"
 	"github.com/pion/webrtc/v4"
@@ -20,7 +21,7 @@ var (
 	mu    sync.Mutex
 )
 
-func handleWebRTC(conn *neffos.NSConn, username string, message neffos.Message) error {
+func handleWebRTC(ctx context.Context, cancel context.CancelFunc, conn *neffos.NSConn, username string, message neffos.Message) error {
 	var msg SignalingMessage
 	err := message.Unmarshal(&msg)
 	if err != nil {
@@ -41,9 +42,9 @@ func handleWebRTC(conn *neffos.NSConn, username string, message neffos.Message) 
 		intent := msg.Intent
 		go func() {
 			if intent == "_anyone_" {
-				processLive(username, track, pc)
+				processLive(ctx, cancel, username, track, pc)
 			} else if intent != "" {
-				processDialog(username, track)
+				processDialog(ctx, cancel, username, track)
 			}
 		}()
 	})
@@ -130,6 +131,12 @@ func initPeerConnection() (*webrtc.PeerConnection, error) {
 
 //视频通话
 
-func processDialog(username string, track *webrtc.TrackRemote) {
-
+func processDialog(ctx context.Context,
+	cancel context.CancelFunc,
+	username string,
+	track *webrtc.TrackRemote) {
+	peer := peers[username]
+	if peer == nil {
+		return
+	}
 }
