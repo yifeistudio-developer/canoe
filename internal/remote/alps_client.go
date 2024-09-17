@@ -31,7 +31,8 @@ func GetUserProfile(accessToken string) *model.AlpsUserProfile {
 		}
 	}(conn)
 	client := generated.NewAuthenticationServiceClient(conn)
-	result, err := client.GetAccountPrincipals(context.Background(), &generated.TicketRequest{Ticket: accessToken})
+	result, err := client.GetAccountPrincipals(context.Background(), &generated.CredentialRequest{Credential: accessToken,
+		Type: generated.CredentialType_ACCESS_TOKEN})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}

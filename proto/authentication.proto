@@ -4,20 +4,26 @@ package grpc;
 
 option go_package = ".;generated";
 
-
 // 认证服务.
 service AuthenticationService {
 
   /**
    * 获取账号概览信息
    */
-  rpc GetAccountPrincipals(TicketRequest) returns (PrincipalsReply) {}
+  rpc GetAccountPrincipals(CredentialRequest) returns (PrincipalsReply) {}
 
 }
 
+enum CredentialType
+{
+  ACCESS_TOKEN = 0;
+  TICKET = 1;
+}
+
 // 凭证
-message TicketRequest {
-  string ticket = 1;
+message CredentialRequest {
+  string credential = 1;
+  CredentialType type = 2;
 }
 
 // 账户概要信息
