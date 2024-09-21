@@ -17,8 +17,7 @@ type SignalingMessage struct {
 }
 
 var (
-	peers = make(map[string]*webrtc.PeerConnection)
-	mu    sync.Mutex
+	peers = sync.Map{}
 )
 
 func handleWebRTC(ctx context.Context, cancel context.CancelFunc, conn *neffos.NSConn, username string, message neffos.Message) error {
@@ -31,7 +30,7 @@ func handleWebRTC(ctx context.Context, cancel context.CancelFunc, conn *neffos.N
 	if err != nil {
 		return err
 	}
-	peers[username] = pc
+	peers.Store(username, pc)
 	// Allow us to receive 1 audio track, and 1 video track
 	if _, err := pc.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
 		return err
@@ -52,8 +51,6 @@ func handleWebRTC(ctx context.Context, cancel context.CancelFunc, conn *neffos.N
 		if candidate == nil {
 			return
 		}
-		mu.Lock()
-		defer mu.Unlock()
 		candidateJson := candidate.ToJSON()
 		candidateMsg := SignalingMessage{
 			Type:      "candidate",
@@ -85,8 +82,9 @@ func handleWebRTC(ctx context.Context, cancel context.CancelFunc, conn *neffos.N
 		}
 		conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, resp))
 	case "candidate":
-		if pc, ok := peers[username]; ok {
+		if value, ok := peers.Load(username); ok {
 			candidate := webrtc.ICECandidateInit{Candidate: msg.Candidate.Candidate}
+			pc := value.(*webrtc.PeerConnection)
 			if err := pc.AddICECandidate(candidate); err != nil {
 				return err
 			}
@@ -135,7 +133,11 @@ func processDialog(ctx context.Context,
 	cancel context.CancelFunc,
 	username string,
 	track *webrtc.TrackRemote) {
-	peer := peers[username]
+	value, ok := peers.Load(username)
+	if !ok {
+		return
+	}
+	peer := value.(*webrtc.PeerConnection)
 	if peer == nil {
 		return
 	}

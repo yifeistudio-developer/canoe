@@ -74,7 +74,12 @@ func HandleWS(accessToken string, handler MsgHandler) *neffos.Server {
 
 	// 清理会话信息
 	ws.OnDisconnect = func(c *neffos.Conn) {
-		delete(peers, profile.Username)
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Errorf("recover from error: %v", r)
+			}
+		}()
+		peers.Delete(profile.Username)
 		cancel()
 		logger.Infof("disconnected: access-token = %s", accessToken)
 	}

@@ -64,7 +64,7 @@ func processLive(ctx context.Context, cancel context.CancelFunc, username string
 		ticker := time.NewTicker(time.Second * 2)
 		for range ticker.C {
 			if rtcpErr := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}}); rtcpErr != nil {
-				logger.Errorf("handle write rtp error: %v", rtcpErr)
+				logger.Errorf("handle write interval rtp error: %v", rtcpErr)
 			}
 			if errors.Is(context.Canceled, ctx.Err()) {
 				break

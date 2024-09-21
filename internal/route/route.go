@@ -39,7 +39,7 @@ func SetupRoutes(app *iris.Application) {
 		}
 	})
 
-	// 视频互动
+	// 视频/直播互动
 	party.Get("/live/{accessToken:string}", func(ctx iris.Context) {
 		accessToken := ctx.Params().GetString("accessToken")
 		server := handler.HandleWS(accessToken, handler.HandlerMap[handler.WebRTC])
