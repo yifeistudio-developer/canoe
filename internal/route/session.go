@@ -4,6 +4,9 @@ import (
 	"github.com/kataras/iris/v12"
 )
 
-func SessionRoutes(party iris.Party) {
+type sessionController struct {
+}
+
+func (s *sessionController) listSession(ctx iris.Context) {
 
 }

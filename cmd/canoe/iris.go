@@ -9,7 +9,7 @@ import (
 )
 
 func startIris(cfg *config.Config) (*iris.Application, bool) {
-	app := iris.New()
+	app := iris.Default()
 	app.Logger().Install(config.GetLogger(cfg.Logger))
 	app.UseGlobal(config.AccessLogger)
 	app.UseError(config.GlobalErrorHandler)

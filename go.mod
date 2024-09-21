@@ -12,6 +12,7 @@ require (
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.7
+	github.com/pion/rtcp v1.2.14
 	github.com/pion/webrtc/v4 v4.0.0-beta.29
 	golang.org/x/net v0.29.0
 	google.golang.org/grpc v1.66.2
@@ -35,6 +36,7 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -81,7 +83,6 @@ require (
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/rtcp v1.2.14 // indirect
 	github.com/pion/rtp v1.8.9 // indirect
 	github.com/pion/sctp v1.8.33 // indirect
 	github.com/pion/sdp/v3 v3.0.9 // indirect

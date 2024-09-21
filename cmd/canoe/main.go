@@ -39,6 +39,7 @@ func startup() {
 	log.Info("Grpc Server started")
 	// do register
 	config.Register(cfg, log)
+	service.SetLogger(app.Logger())
 }
 
 // 关闭

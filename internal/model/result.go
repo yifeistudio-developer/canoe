@@ -7,9 +7,9 @@ type Result struct {
 	Data      interface{} `json:"data,omitempty"`
 }
 
-func Success(data interface{}) Result {
-	return Result{
-		Code:      0,
+func Success(data interface{}) *Result {
+	return &Result{
+		Code:      200,
 		Data:      data,
 		IsSuccess: true,
 	}
