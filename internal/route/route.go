@@ -15,22 +15,19 @@ func SetupRoutes(app *iris.Application) {
 	// root api
 	api := app.Party("/canoe/api")
 	root := mvc.New(api).
-		Register().
+		Register(NewWebSocketService(), NewUserService(), NewSessionService()).
 		Handle(new(rootController))
 
 	// users api
 	root.Party("/users").
-		Register(NewUserService()).
 		Handle(new(userController))
 
 	// sessions api
 	root.Party("/sessions").
-		Register(NewSessionService()).
 		Handle(new(sessionController))
 
 	// websocket api
 	root.Party("/ws").
-		Register(NewWebSocketService()).
 		Handle(new(webSocketController))
 
 }

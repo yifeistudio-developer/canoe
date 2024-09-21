@@ -38,10 +38,8 @@ func startup() {
 	log.Info("Grpc Server started")
 	// do register
 	config.Register(cfg, log)
-
 	db := connectDB(cfg.Database)
-	service.SetDB(db)
-	service.SetLogger(app.Logger())
+	service.SetupServices(db, log)
 }
 
 // 关闭

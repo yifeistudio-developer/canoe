@@ -6,13 +6,13 @@ import (
 )
 
 type webSocketController struct {
-	websocketService *WebsocketService
+	Ws *WebSocketService
 }
 
 // 聊天
 
 func (c *webSocketController) GetChatBy(accessToken string, ctx iris.Context) {
-	service := c.websocketService
+	service := c.Ws
 	server := service.NewWsServer(accessToken, ChatMsgHandler)
 	_, err := server.Upgrade(
 		ctx.ResponseWriter(),
@@ -29,7 +29,7 @@ func (c *webSocketController) GetChatBy(accessToken string, ctx iris.Context) {
 // 视频通话
 
 func (c *webSocketController) GetDialBy(accessToken string, ctx iris.Context) {
-	service := c.websocketService
+	service := c.Ws
 	server := service.NewWsServer(accessToken, service.DialMsgHandler)
 	_, err := server.Upgrade(
 		ctx.ResponseWriter(),

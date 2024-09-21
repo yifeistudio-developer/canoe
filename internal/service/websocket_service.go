@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-type WebsocketService struct {
+type WebSocketService struct {
 	peers *sync.Map
 }
 
@@ -61,7 +61,7 @@ type SignalingMessage struct {
 	Intent    string                  `json:"intent,omitempty"`
 }
 
-func (s *WebsocketService) DialMsgHandler(ctx *wsCtx) error {
+func (s *WebSocketService) DialMsgHandler(ctx *wsCtx) error {
 	var msg SignalingMessage
 	message := ctx.msg
 	conn := ctx.conn
@@ -139,7 +139,7 @@ func (s *WebsocketService) DialMsgHandler(ctx *wsCtx) error {
 	return nil
 }
 
-func (s *WebsocketService) NewWsServer(token string, handler MsgHandler) *neffos.Server {
+func (s *WebSocketService) NewWsServer(token string, handler MsgHandler) *neffos.Server {
 	ctx, cancel := context.WithCancel(context.Background())
 	upgrader := gorilla.Upgrader(grl.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
@@ -159,6 +159,9 @@ func (s *WebsocketService) NewWsServer(token string, handler MsgHandler) *neffos
 	// 当连接建立
 	// 初始化用户会话信息
 	ws.OnConnect = func(conn *neffos.Conn) error {
+		if logger == nil {
+			return nil
+		}
 		logger.Infof("got new connection: access-token = %s", token)
 		return nil
 	}
@@ -211,7 +214,7 @@ func initPeerConnection() (*webrtc.PeerConnection, error) {
 
 //视频通话
 
-func (s *WebsocketService) processDialog(username string) {
+func (s *WebSocketService) processDialog(username string) {
 	peers := s.peers
 	value, ok := peers.Load(username)
 	if !ok {
@@ -223,8 +226,8 @@ func (s *WebsocketService) processDialog(username string) {
 	}
 }
 
-func NewWebSocketService() *WebsocketService {
-	service := &WebsocketService{
+func NewWebSocketService() *WebSocketService {
+	service := &WebSocketService{
 		peers: &sync.Map{},
 	}
 	return service

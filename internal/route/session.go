@@ -6,7 +6,7 @@ import (
 )
 
 type sessionController struct {
-	sessionService *service.SessionService
+	Ss *service.SessionService
 }
 
 func (s *sessionController) listSession(ctx iris.Context) {

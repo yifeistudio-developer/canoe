@@ -7,17 +7,10 @@ import (
 
 var db *gorm.DB
 
-func init() {
-
-}
-
-func SetDB(d *gorm.DB) {
+func SetupServices(d *gorm.DB, l *golog.Logger) {
 	if d == nil {
 		panic("database is nil")
 	}
 	db = d
-}
-
-func SetLogger(d *golog.Logger) {
-	logger = d
+	logger = l
 }

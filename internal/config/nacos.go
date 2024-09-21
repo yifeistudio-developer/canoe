@@ -2,6 +2,7 @@ package config
 
 import (
 	"canoe/internal/util"
+	"errors"
 	"github.com/kataras/golog"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -54,6 +55,9 @@ func DeRegister(cfg *Config, log *golog.Logger) {
 }
 
 func GetService(serviceName string) (model.Service, error) {
+	if client == nil {
+		return model.Service{}, errors.New("client is nil")
+	}
 	return client.GetService(vo.GetServiceParam{
 		ServiceName: serviceName,
 	})

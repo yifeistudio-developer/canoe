@@ -6,7 +6,7 @@ import (
 )
 
 type userController struct {
-	userService *service.UserService
+	Us *service.UserService
 }
 
 func (c *userController) Get() *Result {
