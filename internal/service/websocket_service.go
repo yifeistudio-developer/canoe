@@ -28,7 +28,7 @@ type WebsocketService struct {
 
 type wsCtx struct {
 	ctx     context.Context
-	profile AlpsUserProfile
+	profile *AlpsUserProfile
 	cancel  context.CancelFunc
 	conn    *neffos.NSConn
 	msg     neffos.Message
@@ -141,16 +141,17 @@ func (s *WebsocketService) DialMsgHandler(ctx *wsCtx) error {
 
 func (s *WebsocketService) NewWsServer(token string, handler MsgHandler) *neffos.Server {
 	ctx, cancel := context.WithCancel(context.Background())
-	profile := remote.GetUserProfile(token)
 	upgrader := gorilla.Upgrader(grl.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
+	profile := remote.GetUserProfile(token)
 	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
 		wx := &wsCtx{
-			ctx:    ctx,
-			cancel: cancel,
-			msg:    message,
-			conn:   conn,
+			ctx:     ctx,
+			cancel:  cancel,
+			msg:     message,
+			profile: profile,
+			conn:    conn,
 		}
 		return handler(wx)
 	}})

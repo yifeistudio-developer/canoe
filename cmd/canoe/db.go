@@ -7,8 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var Database *gorm.DB
-
 func connectDB(cfg struct {
 	Host     string `envconfig:"DB_HOST" default:"localhost"`
 	Port     uint64 `envconfig:"DB_PORT" default:"5432"`
@@ -32,6 +30,5 @@ func connectDB(cfg struct {
 	if err != nil {
 		return nil
 	}
-	Database = db
 	return db
 }

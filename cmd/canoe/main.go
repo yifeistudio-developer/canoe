@@ -26,8 +26,7 @@ func main() {
 // 启动
 func startup() {
 	cfg = config.LoadConfig()
-	db := connectDB(cfg.Database)
-	service.SetDB(db)
+
 	isStarted := false
 	app, isStarted = startIris(cfg)
 	if !isStarted {
@@ -39,6 +38,9 @@ func startup() {
 	log.Info("Grpc Server started")
 	// do register
 	config.Register(cfg, log)
+
+	db := connectDB(cfg.Database)
+	service.SetDB(db)
 	service.SetLogger(app.Logger())
 }
 
