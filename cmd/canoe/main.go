@@ -24,6 +24,7 @@ import (
 var cfg *config.Config
 var app *iris.Application
 var rpc *grpc.Server
+var logger *golog.Logger
 
 func main() {
 	quit := make(chan os.Signal, 1)
@@ -37,19 +38,20 @@ func main() {
 func startup() {
 	// load configuration
 	cfg = config.LoadConfig()
+	// init application
 	app = iris.Default()
 	app.Logger().SetLevel("info")
 	app.Logger().Install(config.GetLogger(cfg.Logger))
 	app.UseGlobal(config.AccessLogger)
 	app.UseError(config.GlobalErrorHandler)
-	log := app.Logger()
+	logger = app.Logger()
 
 	// start grpc server
-	rpc = startGrpcServer(log)
-	log.Info("Grpc Server started")
+	rpc = startGrpcServer()
+	logger.Info("Grpc Server started")
 	// connect database
 	db := connectDB(cfg.Database)
-	service.SetupServices(db, log)
+	service.SetupServices(db, logger)
 
 	// start http server
 	isStarted := false
@@ -57,9 +59,9 @@ func startup() {
 	if !isStarted {
 		panic("Canoe Web-Server is not started")
 	}
-	log.Info("Iris Server started")
+	logger.Info("Iris Server started")
 	// already to serve then do register
-	config.Register(cfg, log)
+	config.Register(cfg, logger)
 }
 
 // 关闭
@@ -104,20 +106,20 @@ func connectDB(cfg struct {
 	return db
 }
 
-func startGrpcServer(log *golog.Logger) *grpc.Server {
-	interceptor := remote.ServerInterceptor{Logger: log}
+func startGrpcServer() *grpc.Server {
+	interceptor := remote.ServerInterceptor{Logger: logger}
 	gRpcServer := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor))
 	go func() {
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
+			logger.Fatalf("failed to listen: %v", err)
 		}
 		generated.RegisterAuthenticationServiceServer(gRpcServer, &remote.Server{})
 		for k, v := range gRpcServer.GetServiceInfo() {
-			log.Info("service info: ", k, v)
+			logger.Info("service info: ", k, v)
 		}
 		if err := gRpcServer.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			logger.Fatalf("failed to serve: %v", err)
 		}
 	}()
 	return gRpcServer
