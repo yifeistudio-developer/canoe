@@ -38,6 +38,7 @@ func main() {
 func startup() {
 	// load configuration
 	cfg = config.LoadConfig()
+
 	// init application
 	app = iris.Default()
 	app.Logger().SetLevel("info")
@@ -52,6 +53,7 @@ func startup() {
 	// connect database
 	db := connectDB(cfg.Database)
 	service.SetupServices(db, logger)
+	config.Register(cfg, logger, false)
 
 	// start http server
 	isStarted := false
@@ -61,7 +63,7 @@ func startup() {
 	}
 	logger.Info("Iris Server started")
 	// already to serve then do register
-	config.Register(cfg, logger)
+	config.Register(cfg, logger, true)
 }
 
 // 关闭

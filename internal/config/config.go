@@ -8,6 +8,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/logger"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"log"
 	"os"
@@ -86,7 +87,7 @@ func LoadConfig() *Config {
 		},
 	})
 	if err != nil {
-		//log.Fatalf("Failed to load configuration: %s", err)
+		logger.Warnf("Failed to load configuration: %s", err)
 	}
 	return &cfg
 }

@@ -13,8 +13,13 @@ type webSocketController struct {
 
 func (c *webSocketController) GetChatBy(accessToken string, ctx iris.Context) {
 	service := c.Ws
-	server := service.NewWsServer(accessToken, ChatMsgHandler)
-	_, err := server.Upgrade(
+	server, err := service.NewWsServer(accessToken, ChatMsgHandler)
+	if err != nil {
+		logger.Errorf("start websocket server err: %v", err)
+		ctx.StopWithError(iris.StatusInternalServerError, err)
+		return
+	}
+	_, err = server.Upgrade(
 		ctx.ResponseWriter(),
 		ctx.Request(),
 		nil,
@@ -30,8 +35,13 @@ func (c *webSocketController) GetChatBy(accessToken string, ctx iris.Context) {
 
 func (c *webSocketController) GetDialBy(accessToken string, ctx iris.Context) {
 	service := c.Ws
-	server := service.NewWsServer(accessToken, service.DialMsgHandler)
-	_, err := server.Upgrade(
+	server, err := service.NewWsServer(accessToken, service.DialMsgHandler)
+	if err != nil {
+		logger.Errorf("start websocket server err: %v", err)
+		ctx.StopWithError(iris.StatusInternalServerError, err)
+		return
+	}
+	_, err = server.Upgrade(
 		ctx.ResponseWriter(),
 		ctx.Request(),
 		nil,

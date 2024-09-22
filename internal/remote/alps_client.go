@@ -11,23 +11,21 @@ import (
 	"log"
 )
 
-func GetUserProfile(accessToken string) *model.AlpsUserProfile {
+func GetUserProfile(accessToken string) (*model.AlpsUserProfile, error) {
 	// 获取从nacos获取实例
-	service, err := config.GetService("alps")
+	instance, err := config.GetService("alps")
 	if err != nil {
-		fmt.Println(service, err)
+		return nil, err
 	}
-	instance := service.Hosts[0]
 	metadata := instance.Metadata
 	ip := instance.Ip
 	port := metadata["gRPC_port"]
 	target := fmt.Sprintf("%s:%s", ip, port)
-	fmt.Println(target)
 	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	defer func(conn *grpc.ClientConn) {
 		err := conn.Close()
 		if err != nil {
-
+			// close error
 		}
 	}(conn)
 	client := generated.NewAuthenticationServiceClient(conn)
@@ -41,5 +39,5 @@ func GetUserProfile(accessToken string) *model.AlpsUserProfile {
 		Username: principals.Username,
 		Nickname: principals.Nickname,
 		Avatar:   principals.Avatar,
-	}
+	}, err
 }

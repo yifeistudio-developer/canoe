@@ -139,12 +139,12 @@ func (s *WebSocketService) DialMsgHandler(ctx *wsCtx) error {
 	return nil
 }
 
-func (s *WebSocketService) NewWsServer(token string, handler MsgHandler) *neffos.Server {
+func (s *WebSocketService) NewWsServer(token string, handler MsgHandler) (*neffos.Server, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	upgrader := gorilla.Upgrader(grl.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	})
-	profile := remote.GetUserProfile(token)
+	profile, err := remote.GetUserProfile(token)
 	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
 		wx := &wsCtx{
 			ctx:     ctx,
@@ -177,7 +177,7 @@ func (s *WebSocketService) NewWsServer(token string, handler MsgHandler) *neffos
 		s.peers.Delete(profile.Username)
 		cancel()
 	}
-	return ws
+	return ws, err
 }
 
 func initPeerConnection() (*webrtc.PeerConnection, error) {

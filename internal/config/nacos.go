@@ -2,7 +2,6 @@ package config
 
 import (
 	"canoe/internal/util"
-	"errors"
 	"github.com/kataras/golog"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -12,13 +11,15 @@ import (
 
 var client naming_client.INamingClient
 
-func Register(cfg *Config, log *golog.Logger) {
+func Register(cfg *Config, log *golog.Logger, isEnabled bool) {
 	server := cfg.Server
 	var err error
-	client, err = clients.NewNamingClient(vo.NacosClientParam{
-		ClientConfig:  &cc,
-		ServerConfigs: sc,
-	})
+	if client == nil {
+		client, err = clients.NewNamingClient(vo.NacosClientParam{
+			ClientConfig:  &cc,
+			ServerConfigs: sc,
+		})
+	}
 	address, err := util.GetLocalIpAddress()
 	if err != nil {
 		log.Fatal("register server failed.", err)
@@ -28,7 +29,7 @@ func Register(cfg *Config, log *golog.Logger) {
 		Ip:          address,
 		Port:        server.Port,
 		Weight:      1,
-		Enable:      true,
+		Enable:      isEnabled,
 		Healthy:     true,
 		Metadata: map[string]string{
 			"gRPC_port": "50051",
@@ -54,11 +55,8 @@ func DeRegister(cfg *Config, log *golog.Logger) {
 	log.Infof("deregister server successfully. %v", instance)
 }
 
-func GetService(serviceName string) (model.Service, error) {
-	if client == nil {
-		return model.Service{}, errors.New("client is nil")
-	}
-	return client.GetService(vo.GetServiceParam{
+func GetService(serviceName string) (*model.Instance, error) {
+	return client.SelectOneHealthyInstance(vo.SelectOneHealthInstanceParam{
 		ServiceName: serviceName,
 	})
 }
