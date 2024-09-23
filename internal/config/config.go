@@ -12,7 +12,6 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"log"
 	"os"
-	"time"
 )
 
 var sc []constant.ServerConfig
@@ -98,14 +97,6 @@ func GetLogger(cnf struct {
 	logger := golog.New()
 	logger.SetLevel(cnf.Level)
 	return logger
-}
-
-// AccessLogger access logger
-func AccessLogger(ctx iris.Context) {
-	start := time.Now()
-	ctx.Next()
-	duration := time.Since(start)
-	ctx.Application().Logger().Printf("%s %s took %v", ctx.Method(), ctx.Path(), duration.Milliseconds())
 }
 
 func GlobalErrorHandler(ctx iris.Context) {

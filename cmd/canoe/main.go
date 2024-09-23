@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/kataras/golog"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/accesslog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"gorm.io/driver/postgres"
@@ -17,6 +18,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 )
@@ -38,12 +40,13 @@ func main() {
 func startup() {
 	// load configuration
 	cfg = config.LoadConfig()
+	ac := makeAccessLog()
 
 	// init application
 	app = iris.Default()
 	app.Logger().SetLevel("info")
 	app.Logger().Install(config.GetLogger(cfg.Logger))
-	app.UseGlobal(config.AccessLogger)
+	app.UseRouter(ac.Handler)
 	app.UseError(config.GlobalErrorHandler)
 	logger = app.Logger()
 
@@ -143,4 +146,35 @@ func startIris(cfg *config.Config) (*iris.Application, bool) {
 		}
 	}()
 	return app, <-s
+}
+
+func makeAccessLog() *accesslog.AccessLog {
+	logDir := "./logs"
+	logFile := "access.log"
+	fullPath := filepath.Join(logDir, logFile)
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		err := os.MkdirAll(logDir, os.ModePerm) // 递归创建目录
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	ac := accesslog.File(fullPath)
+	ac.AddOutput(os.Stdout)
+
+	// The default configuration:
+	ac.Delim = '|'
+	ac.TimeFormat = "2006-01-02 15:04:05"
+	ac.Async = false
+	ac.IP = true
+	ac.BytesReceivedBody = true
+	ac.BytesSentBody = true
+	ac.BytesReceived = false
+	ac.BytesSent = false
+	ac.BodyMinify = true
+	ac.RequestBody = true
+	ac.ResponseBody = false
+	ac.KeepMultiLineError = true
+	ac.PanicLog = accesslog.LogHandler
+	return ac
 }
