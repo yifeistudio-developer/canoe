@@ -17,9 +17,15 @@ func (*SessionService) NewSession(accessToken string) *model.Session {
 	return &model.Session{}
 }
 
-func (*SessionService) ListSession(username string) []model.Session {
+func (*SessionService) ListSession(username string, cur int) []model.Session {
+	if cur <= 0 {
+		cur = 1
+	}
+	size := 10
 	var sessions []data.Session
-	db.Where("username = ?", username).Find(&sessions)
+	db.Where("username = ?", username).
+		Offset((cur - 1) * size).
+		Limit(size).Find(&sessions)
 	result := make([]model.Session, len(sessions))
 	for i, s := range sessions {
 		result[i] = model.Session{
