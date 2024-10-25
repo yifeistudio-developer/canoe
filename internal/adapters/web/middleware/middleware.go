@@ -38,10 +38,9 @@ func NewAccessLog(logPath string) *accesslog.AccessLog {
 
 func NewSocketServer() *WebsocketServer {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	server := &WebsocketServer{
+	return &WebsocketServer{
 		peers:  &sync.Map{},
 		ctx:    ctx,
 		cancel: cancelFunc,
 	}
-	return server
 }

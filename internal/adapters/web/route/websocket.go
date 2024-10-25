@@ -11,7 +11,7 @@ type websocketController struct {
 
 func (c *websocketController) GetChatBy(accessToken string, ctx iris.Context) {
 	socket := c.Socket
-	server, err := socket.NewWsServer(accessToken, socket.DialMsgHandler)
+	server, err := socket.Handle(accessToken, socket.DialMsgHandler)
 	if err != nil {
 		ctx.StopWithError(iris.StatusInternalServerError, err)
 		return
@@ -29,7 +29,7 @@ func (c *websocketController) GetChatBy(accessToken string, ctx iris.Context) {
 
 func (c *websocketController) GetDialBy(accessToken string, ctx iris.Context) {
 	socket := c.Socket
-	server, err := socket.NewWsServer(accessToken, middleware.ChatMsgHandler)
+	server, err := socket.Handle(accessToken, middleware.ChatMsgHandler)
 	if err != nil {
 		ctx.StopWithError(iris.StatusInternalServerError, err)
 		return

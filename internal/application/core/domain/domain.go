@@ -34,8 +34,6 @@ type UserSession struct {
 	MsgCur    int64
 }
 
-// 消息
-
 type Message struct {
 	Type      int
 	Attr      int

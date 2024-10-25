@@ -27,26 +27,27 @@ type WebsocketServer struct {
 	cancel context.CancelFunc
 }
 
-type wsCtx struct {
-	profile domain.AlpsUserProfile
-	conn    *neffos.NSConn
-	msg     neffos.Message
-}
-
 type SignalingMessage struct {
 	Type      string                  `json:"type"`
 	SDP       string                  `json:"sdp,omitempty"`
 	Candidate webrtc.ICECandidateInit `json:"candidate,omitempty"`
 	Intent    string                  `json:"intent,omitempty"`
 }
+type udpConn struct {
+	conn *net.UDPConn
+	port int
+}
 
-type MsgHandler func(ctx *wsCtx) error
+type MsgHandler func(profile domain.AlpsUserProfile, conn *neffos.NSConn, msg neffos.Message) error
 
-func ChatMsgHandler(ctx *wsCtx) error {
+var udpConns = map[webrtc.RTPCodecType]*udpConn{
+	webrtc.RTPCodecTypeAudio: {port: 4000},
+	webrtc.RTPCodecTypeVideo: {port: 4002},
+}
+
+func ChatMsgHandler(profile domain.AlpsUserProfile, conn *neffos.NSConn, msg neffos.Message) error {
 	var evp domain.Envelope
-	message := ctx.msg
-	conn := ctx.conn
-	err := message.Unmarshal(&evp)
+	err := msg.Unmarshal(&evp)
 	if err != nil {
 		rlt := domain.Result{Code: 400, Msg: "bad request: message format is illegal."}
 		str, _ := json.Marshal(rlt)
@@ -59,13 +60,10 @@ func ChatMsgHandler(ctx *wsCtx) error {
 	return nil
 }
 
-func (s *WebsocketServer) DialMsgHandler(ctx *wsCtx) error {
-	var msg SignalingMessage
-	message := ctx.msg
-	conn := ctx.conn
-	profile := ctx.profile
+func (s *WebsocketServer) DialMsgHandler(profile domain.AlpsUserProfile, conn *neffos.NSConn, msg neffos.Message) error {
+	var sm SignalingMessage
 	peers := s.peers
-	err := message.Unmarshal(&msg)
+	err := msg.Unmarshal(&sm)
 	if err != nil {
 		return err
 	}
@@ -81,12 +79,12 @@ func (s *WebsocketServer) DialMsgHandler(ctx *wsCtx) error {
 		return err
 	}
 	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		intent := msg.Intent
+		intent := sm.Intent
 		go func() {
 			if intent == "_anyone_" {
-				s.processLive(profile.Username, track, pc)
+				s.handleLive(profile.Username, track, pc)
 			} else if intent != "" {
-				s.processDialog(intent)
+				s.handleDialog(intent)
 			}
 		}()
 	})
@@ -102,9 +100,9 @@ func (s *WebsocketServer) DialMsgHandler(ctx *wsCtx) error {
 		candidateStr, _ := json.Marshal(candidateMsg)
 		conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, candidateStr))
 	})
-	switch msg.Type {
+	switch sm.Type {
 	case "offer":
-		offer := webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: msg.SDP}
+		offer := webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: sm.SDP}
 		if err := pc.SetRemoteDescription(offer); err != nil {
 			return err
 		}
@@ -126,7 +124,7 @@ func (s *WebsocketServer) DialMsgHandler(ctx *wsCtx) error {
 		conn.Conn.Write(conn.Conn.DeserializeMessage(neffos.TextMessage, resp))
 	case "candidate":
 		if value, ok := peers.Load(profile.Username); ok {
-			candidate := webrtc.ICECandidateInit{Candidate: msg.Candidate.Candidate}
+			candidate := webrtc.ICECandidateInit{Candidate: sm.Candidate.Candidate}
 			pc := value.(*webrtc.PeerConnection)
 			if err := pc.AddICECandidate(candidate); err != nil {
 				return err
@@ -136,29 +134,21 @@ func (s *WebsocketServer) DialMsgHandler(ctx *wsCtx) error {
 	return nil
 }
 
-func (s *WebsocketServer) NewWsServer(token string, handler MsgHandler) (*neffos.Server, error) {
+func (s *WebsocketServer) Handle(token string, handler MsgHandler) (*neffos.Server, error) {
+	// todo get alps user profile.
 	upgrader := gorilla.Upgrader(grl.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }})
-	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
-		wx := &wsCtx{
-			msg:     message,
-			profile: domain.AlpsUserProfile{},
-			conn:    conn,
-		}
-		return handler(wx)
+	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: func(conn *neffos.NSConn, msg neffos.Message) error {
+		return handler(domain.AlpsUserProfile{}, conn, msg)
 	}})
-
-	// 当连接建立
-	// 初始化用户会话信息
 	ws.OnConnect = func(conn *neffos.Conn) error {
 		return nil
 	}
-
-	// 清理会话信息
 	ws.OnDisconnect = func(c *neffos.Conn) {
 		defer func() {
 			if r := recover(); r != nil {
 			}
 		}()
+		// todo username
 		s.peers.Delete("")
 		s.cancel()
 	}
@@ -195,7 +185,7 @@ func initPeerConnection() (*webrtc.PeerConnection, error) {
 	return api.NewPeerConnection(config)
 }
 
-func (s *WebsocketServer) processDialog(username string) {
+func (s *WebsocketServer) handleDialog(username string) {
 	peers := s.peers
 	value, ok := peers.Load(username)
 	if !ok {
@@ -207,18 +197,7 @@ func (s *WebsocketServer) processDialog(username string) {
 	}
 }
 
-type udpConn struct {
-	conn *net.UDPConn
-	port int
-}
-
-var udpConns = map[webrtc.RTPCodecType]*udpConn{
-	webrtc.RTPCodecTypeAudio: {port: 4000},
-	webrtc.RTPCodecTypeVideo: {port: 4002},
-}
-
 func initUDP() {
-	// Create a local addr
 	var laddr *net.UDPAddr
 	var err error
 	if laddr, err = net.ResolveUDPAddr("udp", "127.0.0.1:"); err != nil {
@@ -236,7 +215,7 @@ func initUDP() {
 	}
 }
 
-func (s *WebsocketServer) processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConnection) {
+func (s *WebsocketServer) handleLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConnection) {
 	streamURL := fmt.Sprintf("%s/%s", "rtmp://localhost:1935/stream", username)
 	err := s.startFFmpeg(streamURL)
 	if err != nil {
