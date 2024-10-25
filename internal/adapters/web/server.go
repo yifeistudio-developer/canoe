@@ -41,6 +41,9 @@ func (a Adapter) Startup(logPath string) {
 }
 
 func (a Adapter) Shutdown() {
+	if a.server == nil {
+		return
+	}
 	err := a.server.Shutdown(context.Background())
 	if err != nil {
 		a.server.Logger().Error("failed to shutdown server: ", err.Error())

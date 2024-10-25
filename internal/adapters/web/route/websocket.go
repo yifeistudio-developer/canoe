@@ -2,11 +2,11 @@ package route
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/yifeistudio-developer/canoe/internal/adapters/web"
+	"github.com/yifeistudio-developer/canoe/internal/adapters/web/middleware"
 )
 
 type websocketController struct {
-	Socket *web.SocketServer
+	Socket *middleware.SocketServer
 }
 
 func (c *websocketController) GetChatBy(accessToken string, ctx iris.Context) {
@@ -29,7 +29,7 @@ func (c *websocketController) GetChatBy(accessToken string, ctx iris.Context) {
 
 func (c *websocketController) GetDialBy(accessToken string, ctx iris.Context) {
 	socket := c.Socket
-	server, err := socket.NewWsServer(accessToken, web.ChatMsgHandler)
+	server, err := socket.NewWsServer(accessToken, middleware.ChatMsgHandler)
 	if err != nil {
 		ctx.StopWithError(iris.StatusInternalServerError, err)
 		return

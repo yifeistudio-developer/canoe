@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 func NewAccessLog(logPath string) *accesslog.AccessLog {
@@ -32,4 +33,11 @@ func NewAccessLog(logPath string) *accesslog.AccessLog {
 	ac.KeepMultiLineError = true
 	ac.PanicLog = accesslog.LogHandler
 	return ac
+}
+
+func NewSocketServer() *SocketServer {
+	server := &SocketServer{
+		peers: &sync.Map{},
+	}
+	return server
 }
