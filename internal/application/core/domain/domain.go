@@ -1,15 +1,11 @@
 package domain
 
-// 用户信息
-
 type User struct {
 	Name      string
 	Avatar    string
 	Status    int
 	AccountId int64
 }
-
-// 群组
 
 type Group struct {
 	Attr         int
@@ -19,8 +15,6 @@ type Group struct {
 	MemberCounts int
 }
 
-// 群成员
-
 type GroupMember struct {
 	Attr   int
 	Status int
@@ -28,15 +22,11 @@ type GroupMember struct {
 	UserId int64
 }
 
-// 会话
-
 type Session struct {
 	Name  string
 	Type  int
 	RelId int64
 }
-
-// 用户会话
 
 type UserSession struct {
 	UserId    int64
@@ -65,6 +55,27 @@ type AlpsUserProfile struct {
 }
 
 type Result struct {
-	Code int
-	Msg  string
+	Code      int         `json:"code"`
+	IsSuccess bool        `json:"isSuccess"`
+	Msg       string      `json:"msg,omitempty"`
+	Data      interface{} `json:"data,omitempty"`
+}
+
+type Event struct {
+}
+
+func Success(data interface{}) *Result {
+	return &Result{
+		Code:      200,
+		Data:      data,
+		IsSuccess: true,
+	}
+}
+
+func Fail(code int, msg string) Result {
+	return Result{
+		Code:      code,
+		Msg:       msg,
+		IsSuccess: false,
+	}
 }

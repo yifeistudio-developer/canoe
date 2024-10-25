@@ -6,7 +6,7 @@ import (
 )
 
 type websocketController struct {
-	Socket *middleware.SocketServer
+	Socket *middleware.WebsocketServer
 }
 
 func (c *websocketController) GetChatBy(accessToken string, ctx iris.Context) {

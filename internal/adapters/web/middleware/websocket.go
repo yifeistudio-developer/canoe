@@ -21,16 +21,23 @@ import (
 	"time"
 )
 
-type SocketServer struct {
-	peers *sync.Map
+type WebsocketServer struct {
+	peers  *sync.Map
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 type wsCtx struct {
-	ctx     context.Context
 	profile domain.AlpsUserProfile
-	cancel  context.CancelFunc
 	conn    *neffos.NSConn
 	msg     neffos.Message
+}
+
+type SignalingMessage struct {
+	Type      string                  `json:"type"`
+	SDP       string                  `json:"sdp,omitempty"`
+	Candidate webrtc.ICECandidateInit `json:"candidate,omitempty"`
+	Intent    string                  `json:"intent,omitempty"`
 }
 
 type MsgHandler func(ctx *wsCtx) error
@@ -52,15 +59,7 @@ func ChatMsgHandler(ctx *wsCtx) error {
 	return nil
 }
 
-// SignalingMessage 信令消息
-type SignalingMessage struct {
-	Type      string                  `json:"type"`
-	SDP       string                  `json:"sdp,omitempty"`
-	Candidate webrtc.ICECandidateInit `json:"candidate,omitempty"`
-	Intent    string                  `json:"intent,omitempty"`
-}
-
-func (s *SocketServer) DialMsgHandler(ctx *wsCtx) error {
+func (s *WebsocketServer) DialMsgHandler(ctx *wsCtx) error {
 	var msg SignalingMessage
 	message := ctx.msg
 	conn := ctx.conn
@@ -70,7 +69,6 @@ func (s *SocketServer) DialMsgHandler(ctx *wsCtx) error {
 	if err != nil {
 		return err
 	}
-
 	pc, err := initPeerConnection()
 	if err != nil {
 		return err
@@ -86,7 +84,7 @@ func (s *SocketServer) DialMsgHandler(ctx *wsCtx) error {
 		intent := msg.Intent
 		go func() {
 			if intent == "_anyone_" {
-				processLive(ctx.ctx, ctx.cancel, profile.Username, track, pc)
+				s.processLive(profile.Username, track, pc)
 			} else if intent != "" {
 				s.processDialog(intent)
 			}
@@ -138,15 +136,10 @@ func (s *SocketServer) DialMsgHandler(ctx *wsCtx) error {
 	return nil
 }
 
-func (s *SocketServer) NewWsServer(token string, handler MsgHandler) (*neffos.Server, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	upgrader := gorilla.Upgrader(grl.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
-	})
+func (s *WebsocketServer) NewWsServer(token string, handler MsgHandler) (*neffos.Server, error) {
+	upgrader := gorilla.Upgrader(grl.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }})
 	ws := websocket.New(upgrader, websocket.Events{websocket.OnNativeMessage: func(conn *neffos.NSConn, message neffos.Message) error {
 		wx := &wsCtx{
-			ctx:     ctx,
-			cancel:  cancel,
 			msg:     message,
 			profile: domain.AlpsUserProfile{},
 			conn:    conn,
@@ -167,7 +160,7 @@ func (s *SocketServer) NewWsServer(token string, handler MsgHandler) (*neffos.Se
 			}
 		}()
 		s.peers.Delete("")
-		cancel()
+		s.cancel()
 	}
 	return ws, nil
 }
@@ -202,7 +195,7 @@ func initPeerConnection() (*webrtc.PeerConnection, error) {
 	return api.NewPeerConnection(config)
 }
 
-func (s *SocketServer) processDialog(username string) {
+func (s *WebsocketServer) processDialog(username string) {
 	peers := s.peers
 	value, ok := peers.Load(username)
 	if !ok {
@@ -243,51 +236,48 @@ func initUDP() {
 	}
 }
 
-func processLive(ctx context.Context, cancel context.CancelFunc, username string, track *webrtc.TrackRemote, pc *webrtc.PeerConnection) {
+func (s *WebsocketServer) processLive(username string, track *webrtc.TrackRemote, pc *webrtc.PeerConnection) {
 	streamURL := fmt.Sprintf("%s/%s", "rtmp://localhost:1935/stream", username)
-	err := startFFmpeg(ctx, streamURL)
+	err := s.startFFmpeg(streamURL)
 	if err != nil {
-		cancel()
+		s.cancel()
 		return
 	}
-	// Retrieve udp connection
-	c, ok := udpConns[track.Kind()]
-	if !ok {
-		return
-	}
-
-	// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
+	initUDP()
 	go func() {
 		ticker := time.NewTicker(time.Second * 2)
 		for range ticker.C {
 			if rtcpErr := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}}); rtcpErr != nil {
 			}
-			if errors.Is(context.Canceled, ctx.Err()) {
+			if errors.Is(context.Canceled, s.ctx.Err()) {
 				break
 			}
 		}
 	}()
-
+	c, ok := udpConns[track.Kind()]
+	if !ok {
+		return
+	}
 	b := make([]byte, 1500)
 	for {
 		// Read
 		n, _, err := track.Read(b)
 		if err != nil && err != io.EOF {
-			cancel()
+			s.cancel()
 			break
 		}
 		// Write
 		if _, err = c.conn.Write(b[:n]); err != nil {
-			if errors.Is(context.Canceled, ctx.Err()) {
+			if errors.Is(context.Canceled, s.ctx.Err()) {
 				break
 			}
 		}
 	}
 }
 
-func startFFmpeg(ctx context.Context, streamURL string) error {
+func (s *WebsocketServer) startFFmpeg(streamURL string) error {
 	// Create a ffmpeg process that consumes MKV via stdin, and broadcasts out to Stream URL
-	cmd := exec.CommandContext(ctx,
+	cmd := exec.CommandContext(s.ctx,
 		"ffmpeg",
 		"-protocol_whitelist", "file,udp,rtp",
 		"-i", "/tmp/rtp-forwarder.sdp",
@@ -307,7 +297,7 @@ func startFFmpeg(ctx context.Context, streamURL string) error {
 	go func() {
 		scanner := bufio.NewScanner(ffmpegOut)
 		for scanner.Scan() {
-			if errors.Is(context.Canceled, ctx.Err()) {
+			if errors.Is(context.Canceled, s.ctx.Err()) {
 				break
 			}
 		}

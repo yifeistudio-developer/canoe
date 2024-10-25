@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"github.com/kataras/iris/v12/middleware/accesslog"
 	"log"
 	"os"
@@ -35,9 +36,12 @@ func NewAccessLog(logPath string) *accesslog.AccessLog {
 	return ac
 }
 
-func NewSocketServer() *SocketServer {
-	server := &SocketServer{
-		peers: &sync.Map{},
+func NewSocketServer() *WebsocketServer {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	server := &WebsocketServer{
+		peers:  &sync.Map{},
+		ctx:    ctx,
+		cancel: cancelFunc,
 	}
 	return server
 }
