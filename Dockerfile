@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -o canoe canoe/cmd/canoe
+RUN CGO_ENABLED=0 GOOS=linux go build -o canoe canoe/cmd
 
 # the second parse: deploy the application
 FROM alpine:latest
