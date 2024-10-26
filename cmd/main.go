@@ -16,13 +16,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	application := api.NewApplication(dbAdapter)
-	webAdapter := web.NewAdapter(config.GetApplicationPort(), application)
+	app := api.NewApplication(dbAdapter)
+	webAdapter := web.NewAdapter(config.GetApplicationPort(), app)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	webAdapter.Startup(config.GetLogPath())
 	<-quit
 	// shutdown
-	webAdapter.Shutdown()
 	os.Exit(0)
 }

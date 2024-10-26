@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"github.com/kataras/iris/v12"
 	"github.com/yifeistudio-developer/canoe/internal/adapters/web/middleware"
 	"github.com/yifeistudio-developer/canoe/internal/adapters/web/route"
@@ -38,15 +37,4 @@ func (a Adapter) Startup(logPath string) {
 	}()
 	<-s
 	a.server = server
-}
-
-func (a Adapter) Shutdown() {
-	if a.server == nil {
-		return
-	}
-	err := a.server.Shutdown(context.Background())
-	if err != nil {
-		a.server.Logger().Error("failed to shutdown server: ", err.Error())
-		return
-	}
 }
