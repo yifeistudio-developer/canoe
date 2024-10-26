@@ -4,17 +4,17 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/yifeistudio-developer/canoe/internal/adapters/web/middleware"
 	"github.com/yifeistudio-developer/canoe/internal/adapters/web/route"
-	"github.com/yifeistudio-developer/canoe/internal/application/core/api"
+	"github.com/yifeistudio-developer/canoe/internal/ports"
 	"strconv"
 )
 
 type Adapter struct {
 	port   int
-	app    *api.Application
+	app    ports.ApiPort
 	server *iris.Application
 }
 
-func NewAdapter(port int, app *api.Application) *Adapter {
+func NewAdapter(port int, app ports.ApiPort) *Adapter {
 	return &Adapter{port: port, app: app}
 }
 
@@ -22,8 +22,10 @@ func (a Adapter) Startup(logPath string) {
 	server := iris.Default()
 	accessLog := middleware.NewAccessLog(logPath)
 	server.UseRouter(accessLog.Handler)
+	server.UseError(middleware.ErrorHandler)
 	party := server.Party("/canoe/api")
 	route.Register(party, a.app)
+	server.Configure()
 	s := make(chan bool)
 	defer close(s)
 	go func() {

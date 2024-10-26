@@ -1,15 +1,19 @@
 package api
 
 import (
-	"github.com/yifeistudio-developer/canoe/internal/adapters/db"
+	"github.com/yifeistudio-developer/canoe/internal/ports"
 )
 
 type Application struct {
-	User *UserService
+	user *UserApi
 }
 
-func NewApplication(dbAdapter *db.Adapter) *Application {
+func (app *Application) GetUserApiPort() ports.UserApiPort {
+	return app.user
+}
+
+func NewApplication(dbPort ports.DbPort) *Application {
 	return &Application{
-		User: &UserService{db: dbAdapter.User},
+		user: &UserApi{db: dbPort.GetUserDbPort()},
 	}
 }

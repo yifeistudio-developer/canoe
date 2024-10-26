@@ -8,6 +8,7 @@ require (
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/webrtc/v4 v4.0.1
+	github.com/stretchr/testify v1.9.0
 	github.com/yifeistudio-developer/wharf/golang/alps v1.0.3
 	google.golang.org/grpc v1.67.1
 	gorm.io/driver/postgres v1.5.9
@@ -23,6 +24,7 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
@@ -70,10 +72,12 @@ require (
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pion/turn/v4 v4.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tdewolff/minify/v2 v2.20.19 // indirect
 	github.com/tdewolff/parse/v2 v2.7.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

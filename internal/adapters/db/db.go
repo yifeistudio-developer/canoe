@@ -2,12 +2,17 @@ package db
 
 import (
 	"fmt"
+	"github.com/yifeistudio-developer/canoe/internal/ports"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type Adapter struct {
-	User *UserAdapter
+	user *UserAdapter
+}
+
+func (a *Adapter) GetUserDbPort() ports.UserDbPort {
+	return a.user
 }
 
 func NewAdapter(dataSourceUrl string) (*Adapter, error) {
@@ -26,7 +31,7 @@ func NewAdapter(dataSourceUrl string) (*Adapter, error) {
 		return nil, fmt.Errorf("failed to auto migrate order: %w", err)
 	}
 	return &Adapter{
-		User: &UserAdapter{db},
+		user: &UserAdapter{db},
 	}, nil
 
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
 	"log"
 	"os"
@@ -43,4 +44,8 @@ func NewSocketServer() *WebsocketServer {
 		ctx:    ctx,
 		cancel: cancelFunc,
 	}
+}
+
+func ErrorHandler(ctx iris.Context) {
+
 }

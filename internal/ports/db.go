@@ -2,6 +2,10 @@ package ports
 
 import "github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 
+type DbPort interface {
+	GetUserDbPort() UserDbPort
+}
+
 type UserDbPort interface {
 	GetById(id int64) (domain.User, error)
 	Save(user domain.User) error
