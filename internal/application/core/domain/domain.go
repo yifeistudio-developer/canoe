@@ -1,5 +1,10 @@
 package domain
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type User struct {
 	Name      string
 	Avatar    string
@@ -57,6 +62,14 @@ type Result struct {
 	IsSuccess bool        `json:"isSuccess"`
 	Msg       string      `json:"msg,omitempty"`
 	Data      interface{} `json:"data,omitempty"`
+}
+
+func (r Result) Error() string {
+	marshal, err := json.Marshal(r)
+	if err != nil {
+		return fmt.Sprintf("{\"code\":%d,\"is_success\":%v,\"msg\":\"%s\"}", r.Code, r.IsSuccess, r.Msg)
+	}
+	return string(marshal)
 }
 
 type Event struct {

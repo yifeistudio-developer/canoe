@@ -4,9 +4,12 @@ import (
 	"context"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
+	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 )
 
@@ -47,5 +50,21 @@ func NewSocketServer() *WebsocketServer {
 }
 
 func ErrorHandler(ctx iris.Context) {
+	code := ctx.GetStatusCode()
+	err := ctx.StopWithJSON(code, domain.Fail(code, http.StatusText(code)))
+	if err != nil {
+	}
+}
 
+func ContextErrorHandler(ctx iris.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger := ctx.Application().Logger()
+			logger.Error("handle error: path = ", ctx.Path(), " error = ", err)
+			if reflect.TypeOf(err) == reflect.TypeOf(domain.Result{}) {
+				err = ctx.StopWithJSON(ctx.GetStatusCode(), err.(domain.Result))
+			}
+		}
+	}()
+	ctx.Next()
 }

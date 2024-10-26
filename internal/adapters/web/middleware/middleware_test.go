@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/stretchr/testify/suite"
 	"log"
@@ -16,14 +17,13 @@ type MiddlewareTest struct {
 }
 
 func (suite *MiddlewareTest) SetupTest() {
-	app := iris.New()
+	app := iris.Default()
 	app.UseError(ErrorHandler)
 	err := app.Build()
 	if err != nil {
 		log.Fatalf("build iris server error: %v", err)
 		return
 	}
-	//app.Router
 	suite.app = app
 	suite.server = httptest.NewServer(app)
 }
@@ -36,6 +36,9 @@ func (suite *MiddlewareTest) Test_Middleware_ErrorHandler_Not_Found_Error() {
 	resp, err := http.Get(suite.server.URL + "/nonexistent")
 	suite.NoError(err)
 	suite.Equal(http.StatusNotFound, resp.StatusCode)
+	bodyBytes := make([]byte, resp.ContentLength)
+	_, err = resp.Body.Read(bodyBytes)
+	fmt.Println(string(bodyBytes))
 }
 
 func TestErrorHandler(t *testing.T) {

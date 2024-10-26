@@ -23,6 +23,6 @@ type indexController struct {
 }
 
 func (*indexController) Get() *domain.Result {
-	panic("implement me")
+	panic(domain.Fail(1024, "aaaa"))
 	return domain.Success(nil)
 }

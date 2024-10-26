@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/yifeistudio-developer/canoe/config"
 	"github.com/yifeistudio-developer/canoe/internal/ports"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,8 +16,9 @@ func (a *Adapter) GetUserDbPort() ports.UserDbPort {
 	return a.user
 }
 
-func NewAdapter(dataSourceUrl string) (*Adapter, error) {
-	db, openErr := gorm.Open(postgres.Open(dataSourceUrl), &gorm.Config{})
+func NewAdapter() (*Adapter, error) {
+	dataSourceURL := config.GetDataSourceURL()
+	db, openErr := gorm.Open(postgres.Open(dataSourceURL), &gorm.Config{})
 	if openErr != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", openErr)
 	}
