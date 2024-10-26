@@ -62,7 +62,13 @@ func ContextErrorHandler(ctx iris.Context) {
 			logger := ctx.Application().Logger()
 			logger.Error("handle error: path = ", ctx.Path(), " error = ", err)
 			if reflect.TypeOf(err) == reflect.TypeOf(domain.Result{}) {
+				if code := err.(domain.Result).Code; http.StatusText(code) == "" {
+					ctx.StatusCode(code)
+					return
+				}
 				err = ctx.StopWithJSON(ctx.GetStatusCode(), err.(domain.Result))
+			} else {
+				ctx.StatusCode(http.StatusInternalServerError)
 			}
 		}
 	}()

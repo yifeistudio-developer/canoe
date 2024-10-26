@@ -15,7 +15,7 @@ func GetDataSourceURL() string {
 }
 
 func GetLogPath() string {
-	return getEnvironmentValue("LOG_PATH", "./logs")
+	return getEnvironmentValue("LOG_PATH", "./tmp")
 }
 
 func GetAlpsServiceUrl() string {
