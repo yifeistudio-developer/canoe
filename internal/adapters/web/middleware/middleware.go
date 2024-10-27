@@ -13,6 +13,15 @@ import (
 	"sync"
 )
 
+func NewSocketServer() *WebsocketServer {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	return &WebsocketServer{
+		peers:  &sync.Map{},
+		ctx:    ctx,
+		cancel: cancelFunc,
+	}
+}
+
 func NewAccessLog(logPath string) *accesslog.AccessLog {
 	logFile := "access.log"
 	fullPath := filepath.Join(logPath, logFile)
@@ -40,15 +49,6 @@ func NewAccessLog(logPath string) *accesslog.AccessLog {
 	return ac
 }
 
-func NewSocketServer() *WebsocketServer {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	return &WebsocketServer{
-		peers:  &sync.Map{},
-		ctx:    ctx,
-		cancel: cancelFunc,
-	}
-}
-
 func ErrorHandler(ctx iris.Context) {
 	code := ctx.GetStatusCode()
 	err := ctx.StopWithJSON(code, domain.Fail(code, http.StatusText(code)))
@@ -61,15 +61,21 @@ func ContextErrorHandler(ctx iris.Context) {
 		if err := recover(); err != nil {
 			logger := ctx.Application().Logger()
 			logger.Error("handle error: path = ", ctx.Path(), " error = ", err)
-			if reflect.TypeOf(err) == reflect.TypeOf(domain.Result{}) {
-				if code := err.(domain.Result).Code; http.StatusText(code) == "" {
-					ctx.StatusCode(code)
-					return
-				}
-				err = ctx.StopWithJSON(ctx.GetStatusCode(), err.(domain.Result))
-			} else {
+			// unformed error forward to ErrorHandler
+			if reflect.TypeOf(err) != reflect.TypeOf(domain.Result{}) {
 				ctx.StatusCode(http.StatusInternalServerError)
+				return
 			}
+			result := err.(domain.Result)
+			// handle build-in error code
+			if code := result.Code; http.StatusText(code) != "" {
+				if result.Msg == "" {
+					result.Msg = http.StatusText(code)
+				}
+				err = ctx.StopWithJSON(code, result)
+				return
+			}
+			err = ctx.StopWithJSON(http.StatusOK, err.(domain.Result))
 		}
 	}()
 	ctx.Next()
