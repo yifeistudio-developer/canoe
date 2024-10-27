@@ -18,10 +18,6 @@ func GetLogPath() string {
 	return getEnvironmentValue("LOG_PATH", "./tmp")
 }
 
-func GetAlpsServiceUrl() string {
-	return getEnvironmentValue("ALPS_SERVICE_URL", "")
-}
-
 func GetApplicationPort() int {
 	portStr := getEnvironmentValue("APPLICATION_PORT", "3000")
 	port, err := strconv.Atoi(portStr)
@@ -29,6 +25,10 @@ func GetApplicationPort() int {
 		log.Fatalf("port: %s is invalid", portStr)
 	}
 	return port
+}
+
+func GetAlpsServiceUrl() string {
+	return getEnvironmentValue("ALPS_SERVICE_URL", "")
 }
 
 func getEnvironmentValue(key string, option string) string {

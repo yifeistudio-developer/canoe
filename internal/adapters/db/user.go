@@ -10,7 +10,13 @@ type UserAdapter struct {
 }
 
 func (u UserAdapter) GetById(id int64) (domain.User, error) {
-	return domain.User{}, nil
+	var record = User{}
+	u.db.First(&record, id)
+
+	return domain.User{
+		Id:     int64(record.ID),
+		Avatar: record.Avatar,
+	}, nil
 }
 
 func (u UserAdapter) Save(user domain.User) error {

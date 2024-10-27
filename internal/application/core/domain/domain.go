@@ -6,6 +6,7 @@ import (
 )
 
 type User struct {
+	Id        int64
 	Name      string
 	Avatar    string
 	Status    int
@@ -13,6 +14,7 @@ type User struct {
 }
 
 type Group struct {
+	Id           int64
 	Attr         int
 	Name         string
 	Status       int
@@ -21,6 +23,7 @@ type Group struct {
 }
 
 type GroupMember struct {
+	Id     int64
 	Attr   int
 	Status int
 	Name   string
@@ -28,18 +31,21 @@ type GroupMember struct {
 }
 
 type Session struct {
+	Id    int64
 	Name  string
 	Type  int
 	RelId int64
 }
 
 type UserSession struct {
+	Id        int64
 	UserId    int64
 	SessionId int64
 	MsgCur    int64
 }
 
 type Message struct {
+	Id        int64
 	Type      int
 	Attr      int
 	SessionId int64
