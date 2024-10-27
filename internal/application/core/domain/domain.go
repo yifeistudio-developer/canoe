@@ -75,8 +75,12 @@ func (r Result) Error() string {
 type Event struct {
 }
 
-func Success(data interface{}) *Result {
-	return &Result{
+func SuccessNil() Result {
+	return Success(nil)
+}
+
+func Success(data interface{}) Result {
+	return Result{
 		Code:      200,
 		Data:      data,
 		IsSuccess: true,

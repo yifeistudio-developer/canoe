@@ -8,12 +8,12 @@ type Application struct {
 	user *UserApi
 }
 
-func (app *Application) GetUserApiPort() ports.UserApiPort {
+func (app *Application) UserApiPort() ports.UserApiPort {
 	return app.user
 }
 
 func NewApplication(dbPort ports.DbPort) *Application {
 	return &Application{
-		user: &UserApi{db: dbPort.GetUserDbPort()},
+		user: &UserApi{db: dbPort.UserDbPort()},
 	}
 }

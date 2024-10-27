@@ -5,7 +5,7 @@ import (
 	"github.com/yifeistudio-developer/canoe/internal/adapters/grpc"
 	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 	"github.com/yifeistudio-developer/wharf/golang/alps"
-	grpc2 "google.golang.org/grpc"
+	gc "google.golang.org/grpc"
 )
 
 type Adapter struct {
@@ -13,7 +13,7 @@ type Adapter struct {
 
 func (a *Adapter) GetAccountPrincipals() (domain.AlpsUserProfile, error) {
 	var userProfile domain.AlpsUserProfile
-	err := grpc.Dialog(func(conn *grpc2.ClientConn) error {
+	err := grpc.Dialog(func(conn *gc.ClientConn) error {
 		client := alps.NewAuthenticationServiceClient(conn)
 		principals, err := client.GetAccountPrincipals(context.Background(), &alps.CredentialRequest{})
 		if err != nil {

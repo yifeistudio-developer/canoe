@@ -12,7 +12,7 @@ func Register(party iris.Party, app ports.ApiPort) {
 	index := mvc.New(party)
 	index.Handle(new(indexController))
 	index.Party("/users").
-		Register(app.GetUserApiPort()).
+		Register(app.UserApiPort()).
 		Handle(new(userController))
 	index.Party("/ws").
 		Register(middleware.NewSocketServer()).
@@ -22,7 +22,6 @@ func Register(party iris.Party, app ports.ApiPort) {
 type indexController struct {
 }
 
-func (*indexController) Get() *domain.Result {
-	panic("xxxx")
-	return domain.Success(nil)
+func (*indexController) Get() domain.Result {
+	return domain.SuccessNil()
 }

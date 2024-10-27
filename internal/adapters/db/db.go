@@ -12,7 +12,7 @@ type Adapter struct {
 	user *UserAdapter
 }
 
-func (a *Adapter) GetUserDbPort() ports.UserDbPort {
+func (a *Adapter) UserDbPort() ports.UserDbPort {
 	return a.user
 }
 

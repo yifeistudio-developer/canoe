@@ -3,7 +3,7 @@ package ports
 import "github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 
 type DbPort interface {
-	GetUserDbPort() UserDbPort
+	UserDbPort() UserDbPort
 }
 
 type UserDbPort interface {
