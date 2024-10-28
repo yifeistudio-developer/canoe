@@ -27,8 +27,8 @@ func GetApplicationPort() int {
 	return port
 }
 
-func GetAlpsServiceUrl() string {
-	return getEnvironmentValue("ALPS_SERVICE_URL", "")
+func GetGrpcServiceUrl() string {
+	return getEnvironmentValue("GRPC_SERVICE_URL", "")
 }
 
 func getEnvironmentValue(key string, option string) string {
