@@ -1,0 +1,17 @@
+services:
+  postgres:
+    container_name: e2e-test-postgresql
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: canoe
+      POSTGRES_DB: canoe
+      POSTGRES_USER: canoe
+    volumes:
+      - "./init.sql:/docker-entrypoint-initdb.d/init.sql"
+    healthcheck:
+      test: ["CMD", "psql", "-h", "localhost", "-U", "patrol", "-d", "patrol"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  alps:
+    container_name: e2e-test-alps

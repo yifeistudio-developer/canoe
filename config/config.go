@@ -15,7 +15,7 @@ func GetDataSourceURL() string {
 }
 
 func GetLogPath() string {
-	return getEnvironmentValue("LOG_PATH", "./tmp")
+	return getEnvironmentValue("LOG_PATH", "/tmp")
 }
 
 func GetApplicationPort() int {
