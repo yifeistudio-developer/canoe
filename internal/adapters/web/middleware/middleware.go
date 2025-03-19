@@ -66,6 +66,7 @@ func ContextErrorHandler(ctx iris.Context) {
 				ctx.StatusCode(http.StatusInternalServerError)
 				return
 			}
+			//goland:noinspection GoTypeAssertionOnErrors
 			result := err.(domain.Result)
 			// handle build-in error code
 			if code := result.Code; http.StatusText(code) != "" {
