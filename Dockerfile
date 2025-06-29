@@ -12,5 +12,5 @@ WORKDIR /root
 #COPY --from=builder /app/.env .
 #COPY --from=builder /app/.env.dev .
 COPY --from=builder /app/canoe .
-EXPOSE 9000
+EXPOSE 80
 CMD ["./canoe"]
