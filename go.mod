@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/joho/godotenv v1.5.1
 	github.com/kataras/iris/v12 v12.2.11
 	github.com/kataras/neffos v0.0.24-0.20240408172741-99c879ba0ede
 	github.com/lib/pq v1.10.9

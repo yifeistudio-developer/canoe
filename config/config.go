@@ -1,17 +1,25 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
 )
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
 
 func GetEnv() string {
 	return getEnvironmentValue("ENV", "development")
 }
 
 func GetDataSourceURL() string {
-	return getEnvironmentValue("DATA_SOURCE_URL", "postgres://canoe:canoe110930008@localhost:5432/canoe?sslmode=disable&TimeZone=Asia/Shanghai")
+	return getEnvironmentValue("DATABASE_URL", "postgres://canoe:canoe110930008@localhost:5432/canoe?sslmode=disable&TimeZone=Asia/Shanghai")
 }
 
 func GetLogPath() string {
