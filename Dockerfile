@@ -11,6 +11,7 @@ FROM alpine:latest
 WORKDIR /root
 #COPY --from=builder /app/.env .
 #COPY --from=builder /app/.env.dev .
+RUN touch .env
 COPY --from=builder /app/canoe .
 EXPOSE 80
 CMD ["./canoe"]
