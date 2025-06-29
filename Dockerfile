@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o canoe github.com/yifeistudio-developer/
 FROM alpine:latest
 WORKDIR /root
 COPY --from=builder /app/.env .
-COPY --from=builder /app/.env.dev .
+#COPY --from=builder /app/.env.dev .
 COPY --from=builder /app/canoe .
 EXPOSE 9000
 CMD ["./canoe"]
