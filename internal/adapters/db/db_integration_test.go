@@ -3,16 +3,17 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/yifeistudio-developer/canoe/internal/ports"
-	"log"
-	"os"
-	"testing"
-	"time"
 )
 
 type DatabaseSuite struct {

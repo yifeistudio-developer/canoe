@@ -2,15 +2,16 @@ package middleware
 
 import (
 	"context"
-	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/middleware/accesslog"
-	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sync"
+
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/accesslog"
+	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 )
 
 func NewSocketServer() *WebsocketServer {

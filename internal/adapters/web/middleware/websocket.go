@@ -6,6 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os/exec"
+	"sync"
+	"time"
+
 	grl "github.com/gorilla/websocket"
 	"github.com/kataras/iris/v12/websocket"
 	"github.com/kataras/neffos"
@@ -13,12 +20,6 @@ import (
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v4"
 	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
-	"io"
-	"net"
-	"net/http"
-	"os/exec"
-	"sync"
-	"time"
 )
 
 type WebsocketServer struct {

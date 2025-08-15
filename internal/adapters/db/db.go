@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+
 	"github.com/yifeistudio-developer/canoe/config"
 	"github.com/yifeistudio-developer/canoe/internal/ports"
 	"gorm.io/driver/postgres"

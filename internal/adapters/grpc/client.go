@@ -2,11 +2,12 @@ package grpc
 
 import (
 	"context"
+	"log"
+
 	"github.com/yifeistudio-developer/canoe/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	"log"
 )
 
 func UnaryClientInterceptor(

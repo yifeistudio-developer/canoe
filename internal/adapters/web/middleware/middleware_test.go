@@ -2,13 +2,14 @@ package middleware
 
 import (
 	"encoding/json"
-	"github.com/kataras/iris/v12"
-	"github.com/stretchr/testify/suite"
-	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/kataras/iris/v12"
+	"github.com/stretchr/testify/suite"
+	"github.com/yifeistudio-developer/canoe/internal/application/core/domain"
 )
 
 type MiddlewareTest struct {
